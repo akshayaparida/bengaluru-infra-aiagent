@@ -74,3 +74,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'unexpected_error' }, { status: 500 });
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const limitParam = url.searchParams.get('limit');
+    let limit = Number(limitParam ?? '50');
+    if (!Number.isFinite(limit) || limit <= 0) limit = 50;
+    if (limit > 100) limit = 100;
+
+    const rows = await prisma.report.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        createdAt: true,
+        description: true,
+        lat: true,
+        lng: true,
+        status: true,
+      },
+    });
+
+    const items = rows.map((r) => ({
+      id: r.id,
+      createdAt: r.createdAt.toISOString(),
+      description: r.description,
+      lat: r.lat,
+      lng: r.lng,
+      status: r.status,
+    }));
+
+    return NextResponse.json({ items }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ error: 'unexpected_error' }, { status: 500 });
+  }
+}
