@@ -83,7 +83,10 @@ export async function GET(request: Request) {
     if (!Number.isFinite(limit) || limit <= 0) limit = 50;
     if (limit > 100) limit = 100;
 
+    const q = url.searchParams.get('q') || undefined;
+
     const rows = await prisma.report.findMany({
+      where: q ? { description: { contains: q } } : undefined,
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
