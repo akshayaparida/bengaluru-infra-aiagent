@@ -31,7 +31,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   // Clean any test artifacts in DB created by previous tests for isolation.
-  await prisma.report.deleteMany({});
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Report" RESTART IDENTITY CASCADE');
   await ensureCleanDir(uploadDir);
 });
 
