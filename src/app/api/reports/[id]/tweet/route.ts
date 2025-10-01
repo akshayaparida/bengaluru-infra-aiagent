@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { TwitterApi } from 'twitter-api-v2';
 
 const prisma = new PrismaClient();
 
@@ -8,9 +9,9 @@ function buildTweetText(desc: string, lat: number, lng: number, createdAt: Date)
   return base.length > 240 ? base.slice(0, 237) + '…' : base;
 }
 
-export async function POST(request: Request, ctx: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = ctx?.params?.id;
+    const { id } = await params;
     if (!id) return NextResponse.json({ error: 'missing_id' }, { status: 400 });
 
     const report = await prisma.report.findUnique({ where: { id } });
@@ -23,7 +24,30 @@ export async function POST(request: Request, ctx: { params: { id: string } }) {
       return NextResponse.json({ ok: true, simulated: true, text }, { status: 202 });
     }
 
-    return NextResponse.json({ ok: false, reason: 'real_tweet_not_configured_for_poc' }, { status: 501 });
+    // Real posting path (guarded)
+    const key = process.env.TWITTER_CONSUMER_KEY;
+    const secret = process.env.TWITTER_CONSUMER_SECRET;
+    const accessToken = process.env.TWITTER_ACCESS_TOKEN;
+    const accessSecret = process.env.TWITTER_ACCESS_SECRET;
+
+    if (!key || !secret || !accessToken || !accessSecret) {
+      return NextResponse.json({ ok: false, reason: 'twitter_keys_missing' }, { status: 501 });
+    }
+
+    try {
+      const client = new TwitterApi({
+        appKey: key,
+        appSecret: secret,
+        accessToken,
+        accessSecret,
+      });
+      const v2 = client.v2;
+      const result = await v2.tweet(text);
+      return NextResponse.json({ ok: true, simulated: false, tweetId: result.data?.id }, { status: 200 });
+    } catch (err: any) {
+      // Do not leak secrets; return generic error with safe details
+      return NextResponse.json({ ok: false, reason: 'twitter_post_failed', detail: String(err?.code || err?.message || 'error') }, { status: 502 });
+    }
   } catch {
     return NextResponse.json({ error: 'unexpected_error' }, { status: 500 });
   }

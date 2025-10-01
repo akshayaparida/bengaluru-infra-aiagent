@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function POST(request: Request, ctx: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = ctx?.params?.id;
+    const { id } = await params;
     if (!id) {
       return NextResponse.json({ error: 'missing_id' }, { status: 400 });
     }
@@ -18,6 +18,12 @@ export async function POST(request: Request, ctx: { params: { id: string } }) {
 
     const enabled = String(process.env.ENABLE_EMAIL).toLowerCase() === 'true';
     if (!enabled) {
+      // Optionally trigger a tweet in background even when email is simulated
+      const shouldAutoTweet = String(process.env.AUTO_TWEET).toLowerCase() === 'true';
+      if (shouldAutoTweet) {
+        const base = process.env.APP_BASE_URL || 'http://localhost:3000';
+        fetch(`${base}/api/reports/${id}/tweet`, { method: 'POST' }).catch(() => {});
+      }
       return NextResponse.json({ ok: true, simulated: true, id }, { status: 202 });
     }
 
@@ -43,6 +49,13 @@ export async function POST(request: Request, ctx: { params: { id: string } }) {
       subject,
       text,
     });
+
+    // Optionally trigger a tweet in background (feature-flagged)
+    const shouldAutoTweet = String(process.env.AUTO_TWEET).toLowerCase() === 'true';
+    if (shouldAutoTweet) {
+      const base = process.env.APP_BASE_URL || 'http://localhost:3000';
+      fetch(`${base}/api/reports/${id}/tweet`, { method: 'POST' }).catch(() => {});
+    }
 
     return NextResponse.json({ ok: true, id, messageId: info.messageId }, { status: 200 });
   } catch (err) {

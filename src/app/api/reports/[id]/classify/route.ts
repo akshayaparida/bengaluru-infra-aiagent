@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 // Inline simulated classifier to avoid module resolution issues during tests
@@ -18,9 +18,9 @@ function classifySimulatedLocal(description: string) {
 
 const prisma = new PrismaClient();
 
-export async function POST(request: Request, ctx: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = ctx?.params?.id;
+    const { id } = await params;
     if (!id) return NextResponse.json({ error: 'missing_id' }, { status: 400 });
 
     const report = await prisma.report.findUnique({ where: { id } });
