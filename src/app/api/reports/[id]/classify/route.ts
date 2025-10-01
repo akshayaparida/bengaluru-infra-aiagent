@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { classifyViaMcp } from '../../../../../lib/classify';
 
 // Inline simulated classifier to avoid module resolution issues during tests
 function classifySimulatedLocal(description: string) {
@@ -35,11 +36,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const mcpBaseUrl = process.env.MCP_BASE_URL || '';
-    const cls = classifySimulatedLocal(report.description);
 
-    await prisma.report.update({ where: { id }, data: { category: cls.category, severity: cls.severity } });
+    // Try MCP first; on failure, fall back to simulated, but still update DB for demo continuity
+    let category = 'traffic';
+    let severity = 'medium';
+    let simulated = false;
+    try {
+      const via = await classifyViaMcp(report.description, mcpBaseUrl);
+      category = via.category;
+      severity = via.severity;
+      simulated = via.simulated;
+    } catch {
+      const sim = classifySimulatedLocal(report.description);
+      category = sim.category;
+      severity = sim.severity;
+      simulated = true;
+    }
 
-    return NextResponse.json({ ok: true, category: cls.category, severity: cls.severity, simulated: cls.simulated }, { status: 200 });
+    await prisma.report.update({ where: { id }, data: { category, severity } });
+
+    return NextResponse.json({ ok: true, category, severity, simulated }, { status: 200 });
   } catch {
     return NextResponse.json({ error: 'unexpected_error' }, { status: 500 });
   }

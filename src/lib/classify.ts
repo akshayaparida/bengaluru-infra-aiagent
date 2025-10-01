@@ -1,7 +1,7 @@
 export type Classification = { category: string; severity: string; simulated: boolean };
 
-const DEFAULT_CATEGORIES = ['pothole', 'streetlight', 'garbage', 'water-leak', 'tree', 'traffic'];
-const DEFAULT_SEVERITIES = ['low', 'medium', 'high'];
+export const DEFAULT_CATEGORIES = ['pothole', 'streetlight', 'garbage', 'water-leak', 'tree', 'traffic'];
+export const DEFAULT_SEVERITIES = ['low', 'medium', 'high'];
 
 export async function classifySimulated(description: string): Promise<Classification> {
   const text = description.toLowerCase();
@@ -19,8 +19,38 @@ export async function classifySimulated(description: string): Promise<Classifica
   return { category, severity, simulated: true };
 }
 
-// Placeholder for future MCP call
-export async function classifyViaMcp(description: string, _mcpBaseUrl: string): Promise<Classification> {
-  // For POC, just call simulated
-  return classifySimulated(description);
+// Minimal MCP call through Docker MCP Gateway. The gateway is expected to expose
+// a tool endpoint for classification. We keep the contract narrow and robust.
+export async function classifyViaMcp(
+  description: string,
+  mcpBaseUrl: string,
+  fetchFn: typeof fetch = fetch,
+  timeoutMs = 4000,
+): Promise<Classification> {
+  if (!mcpBaseUrl) throw new Error('mcp_base_url_missing');
+
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetchFn(`${mcpBaseUrl.replace(/\/$/, '')}/tools/classify.report`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ description }),
+      signal: ctrl.signal,
+    } as any);
+    clearTimeout(id);
+    if (!res || !(res as any).ok) throw new Error('mcp_http_error');
+    const data: any = await (res as any).json();
+
+    const cat = String(data?.category || '').toLowerCase();
+    const sev = String(data?.severity || '').toLowerCase();
+
+    const category = DEFAULT_CATEGORIES.includes(cat) ? cat : 'traffic';
+    const severity = DEFAULT_SEVERITIES.includes(sev) ? sev : 'medium';
+
+    return { category, severity, simulated: false };
+  } catch (err) {
+    clearTimeout(id);
+    throw err instanceof Error ? err : new Error('mcp_error');
+  }
 }
