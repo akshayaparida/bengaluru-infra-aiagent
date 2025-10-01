@@ -17,7 +17,6 @@ function fdEntries(fd: FormData) {
 
 describe('buildReportFormData (TDD)', () => {
   it('creates multipart form with description, lat, lng, and photo', async () => {
-    // @ts-expect-error helper will be added soon
     const { buildReportFormData }: typeof ReportForm = await import('../../src/lib/reportForm');
     const file = new File([new Uint8Array([1, 2, 3])], 'photo.jpg', { type: 'image/jpeg' });
     const fd = buildReportFormData({ description: 'Pothole at cross', lat: 12.97, lng: 77.59, file });

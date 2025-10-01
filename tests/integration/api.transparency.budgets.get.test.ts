@@ -7,7 +7,6 @@ import type * as BudgetsRoute from '../../src/app/api/transparency/budgets/route
 
 describe('GET /api/transparency/budgets (TDD)', () => {
   it('returns an array of budget items', async () => {
-    // @ts-expect-error route will be added later
     const { GET }: typeof BudgetsRoute = await import('../../src/app/api/transparency/budgets/route');
     const res = await GET(new Request('http://localhost/api/transparency/budgets') as any);
     expect(res.status).toBe(200);
@@ -21,7 +20,6 @@ describe('GET /api/transparency/budgets (TDD)', () => {
   });
 
   it('supports department filter', async () => {
-    // @ts-expect-error route will be added later
     const { GET }: typeof BudgetsRoute = await import('../../src/app/api/transparency/budgets/route');
     const res = await GET(new Request('http://localhost/api/transparency/budgets?department=Roads') as any);
     expect(res.status).toBe(200);

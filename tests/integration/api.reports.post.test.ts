@@ -37,7 +37,6 @@ beforeEach(async () => {
 
 describe('POST /api/reports (TDD)', () => {
   it('400 when required fields are missing', async () => {
-    // @ts-expect-error route will be added later
     const { POST }: typeof ReportsRoute = await import('../../src/app/api/reports/route');
 
     const fd = new FormData();
@@ -48,7 +47,6 @@ describe('POST /api/reports (TDD)', () => {
   });
 
   it('400 when lat/lng invalid or photo missing', async () => {
-    // @ts-expect-error route will be added later
     const { POST }: typeof ReportsRoute = await import('../../src/app/api/reports/route');
 
     const fd = new FormData();
@@ -62,7 +60,6 @@ describe('POST /api/reports (TDD)', () => {
   });
 
   it('201 on valid multipart: saves file and creates DB row', async () => {
-    // @ts-expect-error route will be added later
     const { POST }: typeof ReportsRoute = await import('../../src/app/api/reports/route');
 
     const fd = new FormData();
@@ -71,7 +68,7 @@ describe('POST /api/reports (TDD)', () => {
     fd.set('lng', '77.5946');
 
     const jpegBytes = randomBytes(64);
-    const file = new File([jpegBytes], 'photo.jpg', { type: 'image/jpeg' });
+    const file = new File([new Uint8Array(jpegBytes)], 'photo.jpg', { type: 'image/jpeg' });
     fd.set('photo', file);
 
     const req = new Request('http://localhost/api/reports', { method: 'POST', body: fd as any });
