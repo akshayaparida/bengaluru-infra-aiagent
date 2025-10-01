@@ -33,6 +33,7 @@ services:
     environment:
       - GATEWAY_NAME=bia
       - ENABLE_TOOLS=email.send,social.tweet,storage.write,classify.report,mentions.fetch
+      - CEREBRAS_API_KEY=${CEREBRAS_API_KEY}
     ports:
       - "8008:8008"
 volumes:
