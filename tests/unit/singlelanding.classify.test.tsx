@@ -40,8 +40,8 @@ describe("SingleLanding - classification flow", () => {
 
     render(<SingleLanding />);
 
-    // Expect classification result to appear (from status message)
-    await screen.findByText('Classified: pothole / high');
+    // Actions panel should not be present anymore (fully automated flow)
+    expect(screen.queryByText(/Actions/i)).toBeNull();
 
     // Notify should also be called after classify
     await waitFor(() => {

@@ -17,15 +17,20 @@ enum ReportStatus {
 }
 
 model Report {
-  id          String       @id @default(cuid())
-  createdAt   DateTime     @default(now())
-  description String
-  lat         Float
-  lng         Float
-  photoPath   String
-  status      ReportStatus @default(NEW)
-  category    String?
-  severity    String?
+  id              String       @id @default(cuid())
+  createdAt       DateTime     @default(now())
+  description     String
+  lat             Float
+  lng             Float
+  photoPath       String
+  status          ReportStatus @default(NEW)
+  category        String?
+  severity        String?
+  // Automated workflow fields (optional for backward compatibility)
+  emailedAt       DateTime?
+  emailMessageId  String?
+  tweetedAt       DateTime?
+  tweetId         String?
 
   @@index([createdAt])
 }

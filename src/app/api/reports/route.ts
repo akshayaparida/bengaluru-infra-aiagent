@@ -96,6 +96,12 @@ export async function GET(request: Request) {
         lat: true,
         lng: true,
         status: true,
+        category: true,
+        severity: true,
+        emailedAt: true,
+        emailMessageId: true,
+        tweetedAt: true,
+        tweetId: true,
       },
     });
 
@@ -106,6 +112,12 @@ export async function GET(request: Request) {
       lat: r.lat,
       lng: r.lng,
       status: r.status,
+      category: r.category || null,
+      severity: r.severity || null,
+      emailedAt: r.emailedAt ? r.emailedAt.toISOString() : null,
+      emailMessageId: r.emailMessageId || null,
+      tweetedAt: r.tweetedAt ? r.tweetedAt.toISOString() : null,
+      tweetId: r.tweetId || null,
     }));
 
     return NextResponse.json({ items }, { status: 200 });

@@ -18,6 +18,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const enabled = String(process.env.ENABLE_EMAIL).toLowerCase() === 'true';
     if (!enabled) {
+      // Mark as simulated email for dashboard visibility
+      await prisma.report.update({ where: { id }, data: { emailedAt: new Date(), emailMessageId: 'simulated' } }).catch(() => {});
+
       // Optionally trigger a tweet in background even when email is simulated
       const shouldAutoTweet = String(process.env.AUTO_TWEET).toLowerCase() === 'true';
       if (shouldAutoTweet) {
@@ -49,6 +52,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       subject,
       text,
     });
+
+    // Persist email delivery metadata for dashboard
+    await prisma.report.update({ where: { id }, data: { emailedAt: new Date(), emailMessageId: info.messageId } }).catch(() => {});
 
     // Optionally trigger a tweet in background (feature-flagged)
     const shouldAutoTweet = String(process.env.AUTO_TWEET).toLowerCase() === 'true';

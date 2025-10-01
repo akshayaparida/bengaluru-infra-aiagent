@@ -21,7 +21,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const text = buildTweetText(report.description, report.lat, report.lng, report.createdAt);
 
     if (simulate) {
-      return NextResponse.json({ ok: true, simulated: true, text }, { status: 202 });
+      const simId = `sim-${Date.now()}`;
+      await prisma.report.update({ where: { id }, data: { tweetedAt: new Date(), tweetId: simId } }).catch(() => {});
+      return NextResponse.json({ ok: true, simulated: true, text, tweetId: simId }, { status: 202 });
     }
 
     // Real posting path (guarded)
@@ -43,7 +45,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       });
       const v2 = client.v2;
       const result = await v2.tweet(text);
-      return NextResponse.json({ ok: true, simulated: false, tweetId: result.data?.id }, { status: 200 });
+      const twId = result.data?.id || '';
+      await prisma.report.update({ where: { id }, data: { tweetedAt: new Date(), tweetId: twId } }).catch(() => {});
+      return NextResponse.json({ ok: true, simulated: false, tweetId: twId }, { status: 200 });
     } catch (err: any) {
       // Do not leak secrets; return generic error with safe details
       return NextResponse.json({ ok: false, reason: 'twitter_post_failed', detail: String(err?.code || err?.message || 'error') }, { status: 502 });
