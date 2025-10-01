@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bengaluru Infra AI Agent (Local POC)
 
-## Getting Started
+This is a Next.js + TypeScript app that lets citizens report Bengaluru infrastructure issues with GPS + photo, automatically classifies them with Cerebras LLaMA, sends a local email (Mailpit) to the relevant authority, optionally simulates a tweet via MCP Gateway, and shows them on a Leaflet map dashboard. Everything runs in localhost for demo purposes.
 
-First, run the development server:
+## Quickstart (localhost only)
 
+1) Copy environment variables (do not commit secrets)
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env
+# edit .env locally; keep secrets out of git
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2) Start services (Postgres, Mailpit, MCP Gateway)
+```bash
+docker compose up -d postgres mailpit mcp
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3) Install dependencies and run app (pnpm only)
+```bash
+pnpm install
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4) Open UIs
+- App: http://localhost:3000
+- Mailpit: http://localhost:8025
 
-## Learn More
+5) Run tests
+```bash
+pnpm test
+pnpm e2e
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
+- dev: Next dev server (Turbopack)
+- test: Vitest unit/integration
+- e2e: Playwright end-to-end
+- build/start: Next build/start
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Services (docker-compose)
+- postgres: 17.5-alpine (database URL via `DATABASE_URL`)
+- mailpit: SMTP (1025) + web UI (8025)
+- mcp: Docker MCP Gateway (tools: email.send, social.tweet, storage.write, classify.report, mentions.fetch)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes
+- TDD-first: write tests before code; keep changes small and one-feature-per-PR.
+- No secrets in git. Use `.env.example` as a reference only.
+- Feature flags: TWEET_SIMULATE, FEATURE_MENTIONS to keep the demo stable.
+- Images are stored locally under `public/uploads` for the POC.
