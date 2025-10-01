@@ -1,0 +1,31 @@
+// Prisma schema for Bengaluru Infra AI Agent (local POC)
+// DB: Postgres (see DATABASE_URL in .env)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReportStatus {
+  NEW
+  TRIAGED
+  NOTIFIED
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  description String
+  lat         Float
+  lng         Float
+  photoPath   String
+  status      ReportStatus @default(NEW)
+  category    String?
+  severity    String?
+
+  @@index([createdAt])
+}
