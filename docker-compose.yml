@@ -1,0 +1,39 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:17.5-alpine
+    container_name: biaiagent-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: infra
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d infra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: bia-mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8025"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  mcp:
+    image: ghcr.io/docker/mcp-gateway:latest
+    container_name: bia-mcp
+    environment:
+      - GATEWAY_NAME=bia
+      - ENABLE_TOOLS=email.send,social.tweet,storage.write,classify.report,mentions.fetch
+    ports:
+      - "8008:8008"
+volumes:
+  pgdata:
