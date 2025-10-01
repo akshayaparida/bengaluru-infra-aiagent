@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   title: "Bengaluru Infra Agent (Local PWA)",
   description: "Local-only POC for civic infra reporting",
   manifest: "/manifest.json",
+};
+
+export const viewport = {
   themeColor: "#0a84ff",
 };
 
