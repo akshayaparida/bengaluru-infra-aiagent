@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
+    "dotenv": "^17.2.3",
     "leaflet": "^1.9.4",
     "next": "15.5.4",
     "nodemailer": "^7.0.6",
