@@ -81,35 +81,14 @@ return (
     <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 p-4">
       <section className="space-y-3">
         <header className="space-y-1">
-          <h1 className="text-2xl font-semibold text-neutral-100">Bengaluru Infra Reporter</h1>
-          <p className="text-sm text-neutral-400">Capture a photo + GPS + description, then submit. After saving, you can send a local email and simulate a tweet.</p>
+          <h1 className="text-2xl font-semibold text-neutral-100">Bengaluru Infra AI Reporter</h1>
+          <p className="text-sm text-neutral-400">Benagaluru infra ai agent that mail and tweet your infra issues to respective authorities via AI</p>
         </header>
         <div className="bg-neutral-900/60 backdrop-blur border border-neutral-800 rounded-xl p-4">
           <ReportForm onSubmitted={setReportId} />
         </div>
 
-      {reportId && (
-          <div className="bg-neutral-900/60 backdrop-blur border border-dashed border-neutral-700 rounded-xl p-4">
-            <h3 className="text-lg font-medium mb-2">Actions</h3>
-            <div className="flex flex-wrap items-center gap-3">
-              <button onClick={onClassify} disabled={loading.classify} className="h-9 px-4 rounded-md border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-60">
-                {loading.classify ? "Classifying…" : "Classify (MCP)"}
-              </button>
-              <button onClick={onNotify} disabled={loading.notify} className="h-9 px-4 rounded-md border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-60">
-                {loading.notify ? "Sending…" : "Send email (Mailpit)"}
-              </button>
-              <button onClick={onTweet} disabled={loading.tweet} className="h-9 px-4 rounded-md border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-60">
-                {loading.tweet ? "Posting…" : "Tweet (simulated)"}
-              </button>
-              <div className={`min-w-[280px] text-sm ${classifyMsg.includes('Failed') ? 'text-red-400' : 'text-emerald-400'}`}>{classifyMsg}</div>
-              {classification && (
-                <div className="text-sm text-neutral-300">Classified: <strong>{classification.category}</strong> / <strong>{classification.severity}</strong>{classification.simulated ? ' (simulated)' : ''}</div>
-              )}
-              <div className={`min-w-[280px] text-sm ${notifyMsg.includes('Failed') ? 'text-red-400' : 'text-emerald-400'}`}>{notifyMsg}</div>
-              <div className={`min-w-[280px] text-sm ${tweetMsg.includes('Failed') ? 'text-red-400' : 'text-emerald-400'}`}>{tweetMsg}</div>
-            </div>
-          </div>
-        )}
+      {/* Actions panel removed as flow is automated; dashboard will reflect statuses */}
       </section>
 
       <aside className="bg-neutral-900/60 backdrop-blur border border-neutral-800 rounded-xl p-2">

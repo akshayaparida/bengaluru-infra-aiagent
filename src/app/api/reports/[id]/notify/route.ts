@@ -43,8 +43,34 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       tls: { rejectUnauthorized: false },
     });
 
-    const subject = `Report: ${report.description.slice(0, 60)}`;
-    const text = `${report.description}\nLocation: ${report.lat}, ${report.lng}\nTime: ${report.createdAt.toISOString()}\n\n${disclaimer}`;
+    // Generate AI-crafted email via Cerebras MCP Gateway
+    let subject = `Report: ${report.description.slice(0, 60)}`;
+    let text = `${report.description}\nLocation: ${report.lat}, ${report.lng}\nTime: ${report.createdAt.toISOString()}\n\n${disclaimer}`;
+    
+    const mcpBaseUrl = process.env.MCP_BASE_URL;
+    if (mcpBaseUrl) {
+      try {
+        const aiRes = await fetch(`${mcpBaseUrl}/tools/generate.email`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            description: report.description,
+            category: report.category,
+            severity: report.severity,
+            lat: report.lat,
+            lng: report.lng,
+          }),
+          signal: AbortSignal.timeout(5000),
+        }).then(r => r.json()).catch(() => null);
+        
+        if (aiRes?.subject && aiRes?.body) {
+          subject = aiRes.subject;
+          text = `${aiRes.body}\n\nLocation: ${report.lat}, ${report.lng}\nReported: ${report.createdAt.toISOString()}\n\n${disclaimer}`;
+        }
+      } catch {
+        // Fallback to template on error
+      }
+    }
 
     const info = await transporter.sendMail({
       from,

@@ -1,9 +1,7 @@
-import dynamicImport from "next/dynamic";
 import Link from "next/link";
+import DashboardView from "./DashboardView";
 
 export const dynamic = "force-dynamic";
-
-const DashboardView = dynamicImport(() => import("./DashboardView"), { ssr: false });
 
 export default function DashboardPage() {
   return (

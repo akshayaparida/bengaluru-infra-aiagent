@@ -96,6 +96,57 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'POST' && req.url === '/tools/generate.email') {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body);
+        const { description, category, severity, lat, lng } = payload;
+        
+        const prompt = `Write a formal email to Bangalore civic authorities about this infrastructure issue:
+
+Issue: ${description}
+Category: ${category || 'General'}
+Severity: ${severity || 'Medium'}
+Location: ${lat}, ${lng}
+
+Respond with ONLY JSON: {"subject":"...", "body":"..."}
+Keep subject under 60 chars. Body should be 3-4 professional sentences requesting action.`;
+
+        callCerebras(prompt, (err, data) => {
+          if (err) {
+            console.error('Email generation error:', err.message);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+            return;
+          }
+          try {
+            const text = data?.choices?.[0]?.message?.content || '';
+            const match = text.match(/\{[^}]+\}/);
+            if (!match) throw new Error('No JSON in response');
+            const parsed = JSON.parse(match[0]);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              subject: parsed.subject || 'Infrastructure Report',
+              body: parsed.body || description,
+            }));
+          } catch (e) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              subject: 'Infrastructure Report',
+              body: description,
+            }));
+          }
+        });
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      }
+    });
+    return;
+  }
+
   if (req.method === 'POST' && req.url === '/tools/classify.report') {
     let body = '';
     req.on('data', (chunk) => { body += chunk; });
@@ -135,4 +186,5 @@ server.listen(PORT, () => {
   console.log(`✅ MCP Gateway (Cerebras) listening on http://localhost:${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/health`);
   console.log(`   Classify: POST http://localhost:${PORT}/tools/classify.report`);
+  console.log(`   Email Gen: POST http://localhost:${PORT}/tools/generate.email`);
 });

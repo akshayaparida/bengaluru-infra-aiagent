@@ -165,10 +165,10 @@ export default function DashboardView({ refreshToken }: { refreshToken?: string 
                       <span style={{ color: '#9ae6b4' }}>Emailed ✓</span>
                     )}
                     {r.tweetedAt && (
-                      r.tweetId ? (
+                      (r.tweetId && !r.tweetId.startsWith('sim-')) ? (
                         <a href={`https://x.com/i/web/status/${r.tweetId}`} target="_blank" rel="noreferrer" style={{ color: '#9ae6b4' }}>Tweeted ✓ (view)</a>
                       ) : (
-                        <span style={{ color: '#9ae6b4' }}>Tweeted ✓</span>
+                        <span style={{ color: '#9ae6b4' }}>Tweeted ✓ (simulated)</span>
                       )
                     )}
                     {!r.emailedAt && !r.tweetedAt && (

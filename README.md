@@ -1,4 +1,4 @@
-# Bengaluru Infra AI Agent (Local POC)
+# Bengaluru Infra AI Agent 
 
 This is a Next.js + TypeScript app that lets citizens report Bengaluru infrastructure issues with GPS + photo, automatically classifies them with Cerebras LLaMA, sends a local email (Mailpit) to the relevant authority, optionally simulates a tweet via MCP Gateway, and shows them on a Leaflet map dashboard. Everything runs in localhost for demo purposes.
 
@@ -42,8 +42,4 @@ pnpm e2e
 - mailpit: SMTP (1025) + web UI (8025)
 - mcp: Docker MCP Gateway (tools: email.send, social.tweet, storage.write, classify.report, mentions.fetch)
 
-## Notes
-- TDD-first: write tests before code; keep changes small and one-feature-per-PR.
-- No secrets in git. Use `.env.example` as a reference only.
-- Feature flags: TWEET_SIMULATE, FEATURE_MENTIONS to keep the demo stable.
-- Images are stored locally under `public/uploads` for the POC.
+

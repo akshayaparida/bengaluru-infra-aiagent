@@ -7,6 +7,9 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
   const [description, setDescription] = React.useState("");
   const [lat, setLat] = React.useState<string>("");
   const [lng, setLng] = React.useState<string>("");
+  const [accuracy, setAccuracy] = React.useState<number | null>(null);
+  const [locationLoading, setLocationLoading] = React.useState(false);
+  const [locationName, setLocationName] = React.useState<string>("");
   const [file, setFile] = React.useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -57,18 +60,137 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
     return [toRational(deg, 1), toRational(min, 1), toRational(secFloat, 100)];
   }
 
-  async function getLocationWithFallback(): Promise<{ lat: number; lng: number }> {
+  // Reverse geocoding to get location name from coordinates
+  async function getLocationName(lat: number, lng: number): Promise<string> {
+    try {
+      // Using OpenStreetMap Nominatim API for reverse geocoding
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'BengaluruInfraAgent/1.0'
+          }
+        }
+      );
+      
+      if (!response.ok) throw new Error('Geocoding failed');
+      
+      const data = await response.json();
+      
+      if (data.address) {
+        // Build a readable address for Bengaluru
+        const parts = [];
+        
+        // Add road/area name
+        if (data.address.road) parts.push(data.address.road);
+        else if (data.address.pedestrian) parts.push(data.address.pedestrian);
+        else if (data.address.residential) parts.push(data.address.residential);
+        
+        // Add neighbourhood/suburb
+        if (data.address.neighbourhood) parts.push(data.address.neighbourhood);
+        else if (data.address.suburb) parts.push(data.address.suburb);
+        else if (data.address.quarter) parts.push(data.address.quarter);
+        
+        // Add city area
+        if (data.address.city_district) parts.push(data.address.city_district);
+        
+        // Always add Bengaluru
+        parts.push('Bengaluru');
+        
+        return parts.slice(0, 3).join(', '); // Limit to 3 parts for readability
+      }
+      
+      return data.display_name?.split(',').slice(0, 3).join(', ') || 'Bengaluru';
+    } catch (error) {
+      console.warn('Reverse geocoding failed:', error);
+      return 'Bengaluru'; // Fallback
+    }
+  }
+
+  async function getLocationWithFallback(): Promise<{ lat: number; lng: number; accuracy: number; locationName: string }> {
     if (!navigator.geolocation) throw new Error('Geolocation unsupported');
     const getPosition = (opts: PositionOptions) => new Promise<GeolocationPosition>((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, opts));
+    
+    setLocationLoading(true);
     try {
-      setMessage('Getting your location…');
-      const pos = await getPosition({ enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 });
-      return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      setMessage('🛰️ Getting high-accuracy GPS location...');
+      // Try multiple attempts for better accuracy
+      let bestPosition: GeolocationPosition | null = null;
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        try {
+          const pos = await getPosition({ 
+            enableHighAccuracy: true, 
+            timeout: 8000, 
+            maximumAge: 0 // Force fresh location, no cache
+          });
+          
+          // Keep the most accurate reading
+          if (!bestPosition || pos.coords.accuracy < bestPosition.coords.accuracy) {
+            bestPosition = pos;
+          }
+          
+          // If we get good accuracy (< 50m), use it immediately
+          if (pos.coords.accuracy < 50) {
+            break;
+          }
+          
+          attempts++;
+          if (attempts < maxAttempts) {
+            setMessage(`🛰️ Attempt ${attempts + 1}/${maxAttempts} for better accuracy...`);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s between attempts
+          }
+        } catch (e) {
+          attempts++;
+          if (attempts >= maxAttempts) throw e;
+        }
+      }
+      
+      if (bestPosition) {
+        setAccuracy(bestPosition.coords.accuracy);
+        
+        // Get location name
+        setMessage('📍 Getting location name...');
+        const locationName = await getLocationName(bestPosition.coords.latitude, bestPosition.coords.longitude);
+        
+        return { 
+          lat: bestPosition.coords.latitude, 
+          lng: bestPosition.coords.longitude, 
+          accuracy: bestPosition.coords.accuracy,
+          locationName
+        };
+      }
+      throw new Error('No valid GPS reading obtained');
+      
     } catch (e1: any) {
-      const pos2 = await getPosition({ enableHighAccuracy: false, timeout: 3000, maximumAge: 600000 }).catch((e2) => { throw e2 || e1; });
-      return { lat: pos2.coords.latitude, lng: pos2.coords.longitude };
+      setMessage('📍 Falling back to network-based location...');
+      try {
+        // Fallback to network-based location
+        const pos2 = await getPosition({ 
+          enableHighAccuracy: false, 
+          timeout: 10000, 
+          maximumAge: 60000 // Allow 1 minute old cache for network location
+        });
+        setAccuracy(pos2.coords.accuracy);
+        
+        // Get location name even for network location
+        setMessage('📍 Getting location name...');
+        const locationName = await getLocationName(pos2.coords.latitude, pos2.coords.longitude);
+        
+        return { 
+          lat: pos2.coords.latitude, 
+          lng: pos2.coords.longitude, 
+          accuracy: pos2.coords.accuracy,
+          locationName
+        };
+      } catch (e2) {
+        throw new Error(`GPS failed: ${e1?.message || 'Unable to get location'}`);
+      }
     } finally {
-      setMessage('');
+      setLocationLoading(false);
+      setTimeout(() => setMessage(''), 3000);
     }
   }
 
@@ -97,11 +219,17 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
   // Geolocation with fallback: try high accuracy, then low-accuracy/cached
   const onUseMyLocation = React.useCallback(async () => {
     try {
-      const { lat: la, lng: ln } = await getLocationWithFallback();
+      const { lat: la, lng: ln, accuracy: acc, locationName } = await getLocationWithFallback();
       setLat(String(la));
       setLng(String(ln));
+      setAccuracy(acc);
+      setLocationName(locationName);
+      setMessage(`✅ Location: ${locationName} (accuracy: ${acc.toFixed(0)}m)`);
+      setTimeout(() => setMessage(''), 5000);
     } catch (e: any) {
-      setMessage(`Location error: ${e?.message || 'unable to get location'}`);
+      setMessage(`❌ Location error: ${e?.message || 'unable to get location'}`);
+      setAccuracy(null);
+      setLocationName("");
     }
   }, []);
 
@@ -148,17 +276,25 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
       canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Failed to capture"))), "image/jpeg", 0.92)
     );
 
-    // Get location (reuse if already present)
-    let laNum = Number(lat), lnNum = Number(lng);
-    if (Number.isNaN(laNum) || Number.isNaN(lnNum)) {
-      try {
-        const loc = await getLocationWithFallback();
-        laNum = loc.lat; lnNum = loc.lng;
-        setLat(String(laNum));
-        setLng(String(lnNum));
-      } catch (e: any) {
-        setMessage(`Location error: ${e?.message || 'unable to get location'}`);
-      }
+    // ALWAYS get fresh high-accuracy location when capturing photo
+    let laNum = 0, lnNum = 0, accNum = 0, locName = "";
+    try {
+      setMessage('🛰️ Acquiring GPS location for photo...');
+      const loc = await getLocationWithFallback();
+      laNum = loc.lat; 
+      lnNum = loc.lng;
+      accNum = loc.accuracy;
+      locName = loc.locationName;
+      setLat(String(laNum));
+      setLng(String(lnNum));
+      setAccuracy(accNum);
+      setLocationName(locName);
+      setMessage(`✅ Photo captured at ${locName} (accuracy: ${accNum.toFixed(0)}m)`);
+      setTimeout(() => setMessage(''), 5000);
+    } catch (e: any) {
+      setMessage(`❌ GPS error: ${e?.message || 'unable to get location'}`);
+      // Don't proceed without location
+      return;
     }
 
     // Embed GPS EXIF into JPEG
@@ -192,20 +328,30 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
     setMessage("");
     setReportId(null);
 
-    const latNum = Number(lat);
-    const lngNum = Number(lng);
+    let latNum = Number(lat);
+    let lngNum = Number(lng);
 
     if (!description || !file) {
       setMessage("Please provide description and a photo.");
       return;
     }
-    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
-      // Try one last location attempt before submit to keep backend consistent
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum) || !lat || !lng) {
+      // Must have location before submitting
+      setMessage('⚠️ Getting GPS location before submission...');
       try {
         const loc = await getLocationWithFallback();
         setLat(String(loc.lat));
         setLng(String(loc.lng));
-      } catch {}
+        setAccuracy(loc.accuracy);
+        setLocationName(loc.locationName);
+        latNum = loc.lat;
+        lngNum = loc.lng;
+        setMessage(`✅ Report location: ${loc.locationName}`);
+      } catch (e: any) {
+        setMessage(`❌ Cannot submit without GPS location. ${e?.message}`);
+        setSubmitting(false);
+        return;
+      }
     }
 
     try {
@@ -251,9 +397,18 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
           <div className="text-sm text-neutral-300">Upload from files</div>
           <div className="text-xs text-neutral-400">Choose an image</div>
         </button>
-        <button type="button" onClick={onUseMyLocation} className="h-12 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-left px-4">
-          <div className="text-sm text-neutral-300">Use location</div>
-          <div className="text-xs text-neutral-400">Get your current coordinates</div>
+        <button 
+          type="button" 
+          onClick={onUseMyLocation} 
+          disabled={locationLoading}
+          className="h-12 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-left px-4 disabled:opacity-50"
+        >
+          <div className="text-sm text-neutral-300">
+            {locationLoading ? '🛰️ Getting GPS...' : '📍 Get GPS location'}
+          </div>
+          <div className="text-xs text-neutral-400">
+            {locationLoading ? 'Please wait...' : 'Detect current coordinates'}
+          </div>
         </button>
       </div>
 
@@ -278,6 +433,7 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
       <input
         ref={fileInputRef}
         type="file"
+        name="photo"
         accept="image/*"
         capture="environment"
         onChange={async (e) => {
@@ -285,13 +441,18 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
           if (!f) {
             setFile(null); setPreviewUrl(null); return;
           }
-          // If location available, try embedding; else keep original to avoid blocking UX
+          // Always try to get fresh location when uploading a file
           try {
-            let laNum = Number(lat), lnNum = Number(lng);
-            if (Number.isNaN(laNum) || Number.isNaN(lnNum)) {
-              const loc = await getLocationWithFallback().catch(() => null);
-              if (loc) { laNum = loc.lat; lnNum = loc.lng; setLat(String(laNum)); setLng(String(lnNum)); }
-            }
+            setMessage('🛰️ Getting GPS location for uploaded photo...');
+            const loc = await getLocationWithFallback();
+            const laNum = loc.lat; 
+            const lnNum = loc.lng;
+            setLat(String(laNum)); 
+            setLng(String(lnNum));
+            setAccuracy(loc.accuracy);
+            setLocationName(loc.locationName);
+            setMessage(`✅ Photo location: ${loc.locationName} (accuracy: ${loc.accuracy.toFixed(0)}m)`);
+            setTimeout(() => setMessage(''), 5000);
             const dataUrl = await blobToDataURL(f);
             const withExif = (!Number.isNaN(laNum) && !Number.isNaN(lnNum))
               ? await embedGpsInJpegDataURL(dataUrl, laNum, lnNum, new Date())
@@ -306,16 +467,52 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
           }
         }}
         className="hidden"
-        required
       />
       {previewUrl && (
         <div className="border border-neutral-800 rounded-lg overflow-hidden">
           <img src={previewUrl} alt="preview" className="w-full max-h-72 object-cover" />
         </div>
       )}
-      {/* Read-only location display */}
+      {/* Location display with name and accuracy */}
       {(lat && lng) && (
-        <div className="text-xs text-neutral-400">Location set: {Number(lat).toFixed(4)}, {Number(lng).toFixed(4)} (embedded in photo)</div>
+        <div className="p-3 border border-neutral-700 rounded-lg bg-neutral-900/50 space-y-2">
+          {/* Location Name */}
+          {locationName && (
+            <div className="text-sm font-medium text-neutral-200">
+              📍 {locationName}
+            </div>
+          )}
+          
+          {/* Coordinates */}
+          <div className="text-xs text-neutral-400">
+            Coordinates: {Number(lat).toFixed(6)}, {Number(lng).toFixed(6)}
+          </div>
+          
+          {/* Accuracy Indicator */}
+          {accuracy && (
+            <div className={`flex items-center gap-2 text-xs ${
+              accuracy <= 20 ? 'text-green-400' : 
+              accuracy <= 50 ? 'text-yellow-400' : 
+              accuracy <= 1000 ? 'text-orange-400' : 
+              'text-red-400'
+            }`}>
+              <span>
+                {accuracy <= 20 ? '✅ Excellent GPS' : 
+                 accuracy <= 50 ? '🟡 Good GPS' : 
+                 accuracy <= 1000 ? '⚠️ Fair GPS' : 
+                 '❌ Network Location'}
+              </span>
+              <span>(±{accuracy > 1000 ? `${(accuracy/1000).toFixed(1)}km` : `${accuracy.toFixed(0)}m`})</span>
+            </div>
+          )}
+          
+          {/* Recommendations for poor accuracy */}
+          {accuracy && accuracy > 50 && (
+            <div className="text-amber-300 text-xs">
+              💡 For better accuracy: Use mobile device outdoors with GPS enabled
+            </div>
+          )}
+        </div>
       )}
 
       {/* Description */}
