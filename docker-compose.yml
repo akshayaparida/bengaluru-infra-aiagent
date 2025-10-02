@@ -1,4 +1,4 @@
-version: "3.8"
+
 services:
   postgres:
     image: postgres:17.5-alpine
@@ -28,11 +28,10 @@ services:
       timeout: 5s
       retries: 10
   mcp:
-    image: ghcr.io/docker/mcp-gateway:latest
+    build: ./mcp-gateway
     container_name: bia-mcp
     environment:
-      - GATEWAY_NAME=bia
-      - ENABLE_TOOLS=email.send,social.tweet,storage.write,classify.report,mentions.fetch
+      - PORT=8008
       - CEREBRAS_API_KEY=${CEREBRAS_API_KEY}
     ports:
       - "8008:8008"
