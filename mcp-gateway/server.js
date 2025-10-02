@@ -147,6 +147,69 @@ Keep subject under 60 chars. Body should be 3-4 professional sentences requestin
     return;
   }
 
+  if (req.method === 'POST' && req.url === '/tools/generate.tweet') {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const payload = JSON.parse(body);
+        const { description, category, severity, locationName } = payload;
+        
+        const prompt = `Write a tweet about this Bangalore infrastructure issue. Tag @BBMPCOMM (Bangalore civic authority).
+
+Issue: ${description}
+Category: ${category || 'infrastructure'}
+Severity: ${severity || 'medium'}
+Location: ${locationName || 'Bangalore'}
+
+Rules:
+- Start with relevant emoji
+- Tag @BBMPCOMM
+- Keep under 250 characters
+- Be professional but urgent
+- Include category and location
+
+Respond with ONLY the tweet text (no JSON, no quotes, just the tweet).`;
+
+        callCerebras(prompt, (err, data) => {
+          if (err) {
+            console.error('Tweet generation error:', err.message);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+            return;
+          }
+          try {
+            let tweetText = data?.choices?.[0]?.message?.content || '';
+            // Clean up any quotes or formatting
+            tweetText = tweetText.replace(/^"|"$/g, '').trim();
+            
+            // Ensure @BBMPCOMM is included
+            if (!tweetText.includes('@BBMPCOMM')) {
+              tweetText = tweetText + ' @BBMPCOMM';
+            }
+            
+            // Truncate if too long
+            if (tweetText.length > 270) {
+              tweetText = tweetText.slice(0, 267) + '...';
+            }
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ tweet: tweetText }));
+          } catch (e) {
+            // Fallback tweet
+            const fallback = `🚨 ${category || 'Infrastructure'} issue reported in ${locationName || 'Bangalore'}. ${description.slice(0, 100)}... @BBMPCOMM please address urgently!`;
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ tweet: fallback.slice(0, 270) }));
+          }
+        });
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      }
+    });
+    return;
+  }
+
   if (req.method === 'POST' && req.url === '/tools/classify.report') {
     let body = '';
     req.on('data', (chunk) => { body += chunk; });
@@ -187,4 +250,5 @@ server.listen(PORT, () => {
   console.log(`   Health: http://localhost:${PORT}/health`);
   console.log(`   Classify: POST http://localhost:${PORT}/tools/classify.report`);
   console.log(`   Email Gen: POST http://localhost:${PORT}/tools/generate.email`);
+  console.log(`   Tweet Gen: POST http://localhost:${PORT}/tools/generate.tweet`);
 });

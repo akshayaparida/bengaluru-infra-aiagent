@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { PrismaClient } from '@prisma/client';
+import path from 'path';
+import fs from 'fs/promises';
 
 const prisma = new PrismaClient();
 
@@ -43,8 +45,35 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       tls: { rejectUnauthorized: false },
     });
 
+    // Get photo attachment
+    const storageDir = process.env.FILE_STORAGE_DIR || path.join(process.cwd(), '.data', 'uploads');
+    const photoPath = path.join(storageDir, report.photoPath);
+    let photoAttachment = null;
+    
+    try {
+      await fs.access(photoPath);
+      photoAttachment = {
+        filename: `report-${id}.jpg`,
+        path: photoPath,
+        contentType: 'image/jpeg'
+      };
+    } catch {
+      console.warn(`Photo not found: ${photoPath}`);
+    }
+
     // Generate AI-crafted email via Cerebras MCP Gateway
-    let subject = `Report: ${report.description.slice(0, 60)}`;
+    let subject = `🚨 Infrastructure Report: ${report.description.slice(0, 50)}`;
+    let html = `
+      <h2>Infrastructure Issue Reported</h2>
+      <p><strong>Description:</strong> ${report.description}</p>
+      <p><strong>Category:</strong> ${report.category || 'Unclassified'}</p>
+      <p><strong>Severity:</strong> ${report.severity || 'Medium'}</p>
+      <p><strong>Location:</strong> ${report.lat.toFixed(6)}, ${report.lng.toFixed(6)}</p>
+      <p><strong>Reported:</strong> ${new Date(report.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+      ${photoAttachment ? '<p><strong>Photo:</strong> Please see attachment</p>' : ''}
+      <hr>
+      <p><em>${disclaimer}</em></p>
+    `;
     let text = `${report.description}\nLocation: ${report.lat}, ${report.lng}\nTime: ${report.createdAt.toISOString()}\n\n${disclaimer}`;
     
     const mcpBaseUrl = process.env.MCP_BASE_URL;
@@ -64,20 +93,43 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }).then(r => r.json()).catch(() => null);
         
         if (aiRes?.subject && aiRes?.body) {
-          subject = aiRes.subject;
-          text = `${aiRes.body}\n\nLocation: ${report.lat}, ${report.lng}\nReported: ${report.createdAt.toISOString()}\n\n${disclaimer}`;
+          subject = `🚨 ${aiRes.subject}`;
+          html = `
+            <h2>Infrastructure Issue Report - Action Required</h2>
+            ${aiRes.body.split('\n').map((line: string) => `<p>${line}</p>`).join('')}
+            <hr>
+            <h3>Report Details:</h3>
+            <ul>
+              <li><strong>Category:</strong> ${report.category || 'Unclassified'}</li>
+              <li><strong>Severity:</strong> ${report.severity || 'Medium'}</li>
+              <li><strong>Location:</strong> ${report.lat.toFixed(6)}, ${report.lng.toFixed(6)}</li>
+              <li><strong>Reported:</strong> ${new Date(report.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</li>
+            </ul>
+            ${photoAttachment ? '<p>📷 <strong>Photo evidence attached</strong></p>' : ''}
+            <hr>
+            <p><em>${disclaimer}</em></p>
+          `;
+          text = `${aiRes.body}\n\nCategory: ${report.category}\nSeverity: ${report.severity}\nLocation: ${report.lat}, ${report.lng}\nReported: ${report.createdAt.toISOString()}\n\n${disclaimer}`;
         }
       } catch {
         // Fallback to template on error
       }
     }
 
-    const info = await transporter.sendMail({
+    const mailOptions: any = {
       from,
       to,
       subject,
       text,
-    });
+      html,
+    };
+
+    // Add photo attachment if available
+    if (photoAttachment) {
+      mailOptions.attachments = [photoAttachment];
+    }
+
+    const info = await transporter.sendMail(mailOptions);
 
     // Persist email delivery metadata for dashboard
     await prisma.report.update({ where: { id }, data: { emailedAt: new Date(), emailMessageId: info.messageId } }).catch(() => {});
