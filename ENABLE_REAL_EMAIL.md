@@ -24,7 +24,7 @@ ENABLE_EMAIL=true
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=blrinfraaiagent@gmail.com
-SMTP_PASSWORD=your_16_char_app_password_here
+SMTP_PASSWORD=REPLACE_WITH_YOUR_16_CHAR_APP_PASSWORD
 FROM_EMAIL=blrinfraaiagent@gmail.com
 NOTIFY_TO=akparida28@gmail.com
 ```

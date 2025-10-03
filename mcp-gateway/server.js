@@ -13,12 +13,12 @@ if (!CEREBRAS_API_KEY) {
 
 const CEREBRAS_API_URL = 'https://api.cerebras.ai/v1/chat/completions';
 
-function callCerebras(prompt, callback) {
+function callCerebras(prompt, callback, maxTokens = 300) {
   const data = JSON.stringify({
-    model: 'llama3.1-8b',
+    model: 'llama3.3-70b',
     messages: [{ role: 'user', content: prompt }],
-    max_tokens: 100,
-    temperature: 0.3,
+    max_tokens: maxTokens,
+    temperature: 0.2,
   });
 
   const options = {
@@ -153,23 +153,36 @@ Keep subject under 60 chars. Body should be 3-4 professional sentences requestin
     req.on('end', () => {
       try {
         const payload = JSON.parse(body);
-        const { description, category, severity, locationName } = payload;
+        const { description, category, severity, locationName, landmark, lat, lng, mapsLink, civicHandle, icccHandle } = payload;
+        const handle = civicHandle || '@GBA_office';
+        const iccc = icccHandle || '@ICCCBengaluru';
+        const location = landmark || locationName || 'Bengaluru';
         
-        const prompt = `Write a tweet about this Bangalore infrastructure issue. Tag @BBMPCOMM (Bangalore civic authority).
+        // Direct prompt that produces complete tweets with enhanced description
+        const emoji = category === 'pothole' ? '🕳️' : category === 'streetlight' ? '💡' : category === 'garbage' ? '🗑️' : category === 'water-leak' ? '💧' : '🚨';
+        
+        // Add severity/urgency keywords based on classification
+        const urgencyWord = severity === 'high' ? 'URGENT:' : severity === 'medium' ? 'Attention needed:' : '';
+        
+        const prompt = `You are writing a civic infrastructure tweet for Bangalore authorities.
 
-Issue: ${description}
-Category: ${category || 'infrastructure'}
-Severity: ${severity || 'medium'}
-Location: ${locationName || 'Bangalore'}
+Original report: "${description}"
+Category: ${category}
+Severity: ${severity}
+Location: ${location}
 
-Rules:
-- Start with relevant emoji
-- Tag @BBMPCOMM
-- Keep under 250 characters
-- Be professional but urgent
-- Include category and location
+Enhance the description to be more specific and impactful:
+- For potholes: mention size/depth, traffic impact, safety risk
+- For streetlights: mention darkness, safety concerns, area affected
+- For garbage: mention accumulation, health hazard, duration
+- For water leaks: mention water waste, road damage, urgency
 
-Respond with ONLY the tweet text (no JSON, no quotes, just the tweet).`;
+Write a complete tweet:
+${emoji} ${urgencyWord} [enhanced 40-60 char description] 📍 ${location} 🗺️ ${mapsLink} ${handle} ${iccc}
+
+Be urgent, specific, and civic-minded. Max 250 chars total.
+
+Tweet:`;
 
         callCerebras(prompt, (err, data) => {
           if (err) {
@@ -180,26 +193,74 @@ Respond with ONLY the tweet text (no JSON, no quotes, just the tweet).`;
           }
           try {
             let tweetText = data?.choices?.[0]?.message?.content || '';
+            
             // Clean up any quotes or formatting
             tweetText = tweetText.replace(/^"|"$/g, '').trim();
             
-            // Ensure @BBMPCOMM is included
-            if (!tweetText.includes('@BBMPCOMM')) {
-              tweetText = tweetText + ' @BBMPCOMM';
+            // If AI response is too short or empty, use smart template
+            if (tweetText.length < 30) {
+              // Enhanced fallback with urgency words
+              const urgencyPrefix = severity === 'high' ? 'URGENT: ' : severity === 'medium' ? '' : '';
+              const impactWord = category === 'pothole' ? 'causing traffic hazard' : 
+                                category === 'streetlight' ? 'creating safety risk' : 
+                                category === 'garbage' ? 'health hazard' : 
+                                category === 'water-leak' ? 'wasting water' : 'needs attention';
+              tweetText = `${emoji} ${urgencyPrefix}${description} - ${impactWord} 📍 ${location}`;
             }
             
-            // Truncate if too long
-            if (tweetText.length > 270) {
-              tweetText = tweetText.slice(0, 267) + '...';
+            // Replace wrong handles if AI used old ones
+            tweetText = tweetText.replace(/@BBMPCOMM/g, handle);
+            tweetText = tweetText.replace(/@BBMP_MAYOR/g, handle);
+            
+            // Ensure both handles are included
+            if (!tweetText.includes(handle)) {
+              tweetText = tweetText + ' ' + handle;
+            }
+            if (!tweetText.includes(iccc)) {
+              tweetText = tweetText + ' ' + iccc;
+            }
+            
+            // Ensure location emoji and map link are included
+            if (!tweetText.includes('📍')) {
+              const firstLocationMatch = tweetText.indexOf(location);
+              if (firstLocationMatch >= 0) {
+                tweetText = tweetText.substring(0, firstLocationMatch) + `📍 ${location}` + tweetText.substring(firstLocationMatch + location.length);
+              } else {
+                tweetText = tweetText + ` 📍 ${location}`;
+              }
+            }
+            if (!tweetText.includes(mapsLink)) {
+              // Add map link with emoji if not present
+              const mapPart = ` 🗺️ ${mapsLink}`;
+              tweetText = tweetText + mapPart;
+            }
+            
+            // Truncate if too long, but preserve map link and handles at end
+            if (tweetText.length > 280) {
+              // Extract the ending (map link + handles)
+              const mapMatch = tweetText.match(/🗺️\s+https:\/\/[^\s]+/);
+              const handlesPart = ` ${handle} ${iccc}`;
+              const endingPart = (mapMatch ? mapMatch[0] : '') + handlesPart;
+              
+              // Truncate the description part
+              const maxDescLength = 280 - endingPart.length - 3; // -3 for '...'
+              if (maxDescLength > 50) {
+                const descPart = tweetText.substring(0, maxDescLength);
+                tweetText = descPart + '...' + endingPart;
+              } else {
+                // If too short, just hard truncate
+                tweetText = tweetText.slice(0, 277) + '...';
+              }
             }
             
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ tweet: tweetText }));
           } catch (e) {
-            // Fallback tweet
-            const fallback = `🚨 ${category || 'Infrastructure'} issue reported in ${locationName || 'Bangalore'}. ${description.slice(0, 100)}... @BBMPCOMM please address urgently!`;
+            // Fallback tweet with all required elements
+            const fallbackEmoji = category === 'pothole' ? '🕳️' : category === 'streetlight' ? '💡' : '🚨';
+            const fallback = `${fallbackEmoji} ${category || 'Infrastructure'} issue: ${description.slice(0, 60)} 📍 ${location} 🗺️ ${mapsLink} ${handle} ${iccc}`;
             res.writeHead(200, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ tweet: fallback.slice(0, 270) }));
+            res.end(JSON.stringify({ tweet: fallback.slice(0, 280) }));
           }
         });
       } catch (e) {
@@ -246,7 +307,7 @@ Respond with ONLY the tweet text (no JSON, no quotes, just the tweet).`;
 });
 
 server.listen(PORT, () => {
-  console.log(`✅ MCP Gateway (Cerebras) listening on http://localhost:${PORT}`);
+  console.log(`✅ MCP Gateway (Cerebras Llama 3.3 70B) listening on http://localhost:${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/health`);
   console.log(`   Classify: POST http://localhost:${PORT}/tools/classify.report`);
   console.log(`   Email Gen: POST http://localhost:${PORT}/tools/generate.email`);

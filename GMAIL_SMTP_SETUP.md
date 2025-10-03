@@ -30,7 +30,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 FROM_EMAIL=blrinfraaiagent@gmail.com
 SMTP_USER=blrinfraaiagent@gmail.com
-SMTP_PASSWORD={{YOUR_16_CHAR_APP_PASSWORD_HERE}}
+SMTP_PASSWORD=REPLACE_WITH_YOUR_APP_PASSWORD
 NOTIFY_TO=akparida28@gmail.com
 
 # Optional: Set to false to use real email (not simulation)

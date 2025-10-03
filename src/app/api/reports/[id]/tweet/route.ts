@@ -9,6 +9,7 @@ const prisma = new PrismaClient();
 async function buildTweetText(desc: string, category: string | null, severity: string | null, lat: number, lng: number): Promise<string> {
   const mcpBaseUrl = process.env.MCP_BASE_URL;
   const civicHandle = process.env.CIVIC_TWITTER_HANDLE || '@GBA_office'; // GBA office (Greater Bengaluru Authority)
+  const icccHandle = '@ICCCBengaluru'; // Integrated Command and Control Centre Bengaluru
   const mapsLink = `https://maps.google.com/?q=${lat},${lng}`;
   
   // Get location name from reverse geocoding
@@ -55,6 +56,7 @@ async function buildTweetText(desc: string, category: string | null, severity: s
           lng: lng,
           mapsLink: mapsLink,
           civicHandle: civicHandle,
+          icccHandle: icccHandle,
         }),
         signal: AbortSignal.timeout(5000),
       });
@@ -71,7 +73,7 @@ async function buildTweetText(desc: string, category: string | null, severity: s
   // Fallback template with landmark and exact location
   const emoji = category === 'pothole' ? '🕳️' : category === 'streetlight' ? '💡' : '🚨';
   const locLine = landmark ? `📍 ${locationName}` : `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-  const base = `${emoji} ${category || 'Infrastructure'} issue: ${desc.slice(0, 60)}\n${locLine}\n🗺️ ${mapsLink}\n${civicHandle} please address urgently!`;
+  const base = `${emoji} ${category || 'Infrastructure'} issue: ${desc.slice(0, 60)}\n${locLine}\n🗺️ ${mapsLink}\n${civicHandle} ${icccHandle} please address urgently!`;
   return base.length > 270 ? base.slice(0, 267) + '...' : base;
 }
 
@@ -90,6 +92,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const simId = `sim-${Date.now()}`;
       await prisma.report.update({ where: { id }, data: { tweetedAt: new Date(), tweetId: simId } });
       return NextResponse.json({ ok: true, simulated: true, text, tweetId: simId }, { status: 202 });
+    }
+    
+    // Smart rate limiting: Check daily tweet count (Free tier: 17/day)
+    const dailyLimit = parseInt(process.env.TWITTER_DAILY_LIMIT || '15'); // Conservative limit
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayTweets = await prisma.report.count({
+      where: {
+        tweetedAt: { gte: today },
+        tweetId: { not: { startsWith: 'sim-' } } // Exclude simulated tweets
+      }
+    });
+    
+    if (todayTweets >= dailyLimit) {
+      console.warn(`[Twitter] Daily limit reached: ${todayTweets}/${dailyLimit} tweets today`);
+      return NextResponse.json({
+        ok: false,
+        reason: 'daily_limit_reached',
+        detail: `Daily tweet limit (${dailyLimit}) reached. Resets at midnight IST.`,
+        tweetsToday: todayTweets,
+        limit: dailyLimit
+      }, { status: 429 });
     }
 
     // Real posting path (guarded)
@@ -136,10 +161,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
       
       // Post tweet with or without media
-      // IMPORTANT: Include reply_settings to ensure tweet appears in "Posts" section, not "Replies"
+      // Note: reply_settings controls who can reply (not where it appears)
       const tweetPayload: any = { 
-        text,
-        reply_settings: 'everyone' // Ensures this is posted as a standalone tweet, not a reply
+        text
+        // No reply_settings needed - tweets appear in Posts by default when not replying to anyone
       };
       if (mediaId) {
         tweetPayload.media = { media_ids: [mediaId] };
@@ -150,8 +175,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await prisma.report.update({ where: { id }, data: { tweetedAt: new Date(), tweetId: twId } });
       return NextResponse.json({ ok: true, simulated: false, tweetId: twId, hasMedia: !!mediaId }, { status: 200 });
     } catch (err: any) {
-      // Do not leak secrets; return generic error with safe details
-      return NextResponse.json({ ok: false, reason: 'twitter_post_failed', detail: String(err?.code || err?.message || 'error') }, { status: 502 });
+      // Log detailed error for debugging (without secrets)
+      console.error('[Twitter Error] Code:', err?.code);
+      console.error('[Twitter Error] Message:', err?.message);
+      console.error('[Twitter Error] Data:', JSON.stringify(err?.data || {}));
+      console.error('[Twitter Error] RateLimit:', JSON.stringify(err?.rateLimit || {}));
+      
+      // Specific handling for rate limits
+      const errorCode = String(err?.code || '');
+      if (errorCode === '429' || err?.message?.includes('Too Many Requests')) {
+        return NextResponse.json({ 
+          ok: false, 
+          reason: 'rate_limit_exceeded', 
+          detail: err?.data?.detail || err?.message || 'Twitter rate limit exceeded',
+          error: err?.data || {}
+        }, { status: 429 });
+      }
+      
+      // Generic error (don't leak secrets)
+      return NextResponse.json({ 
+        ok: false, 
+        reason: 'twitter_post_failed', 
+        detail: String(err?.code || err?.message || 'error'),
+        hint: errorCode === '403' ? 'Check Twitter app permissions' : undefined
+      }, { status: 502 });
     }
   } catch {
     return NextResponse.json({ error: 'unexpected_error' }, { status: 500 });

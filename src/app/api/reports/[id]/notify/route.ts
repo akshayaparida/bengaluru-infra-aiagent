@@ -34,8 +34,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const host = process.env.SMTP_HOST || 'localhost';
     const port = Number(process.env.SMTP_PORT || '1025');
-    // Agent email configuration
-    const from = process.env.FROM_EMAIL || 'blrinfraaiagent@gmail.com';
+    // Agent email configuration with sender name
+    const from = `"Bengaluru Infra AI Agent" <${process.env.FROM_EMAIL || 'blrinfraaiagent@gmail.com'}>`; 
     const to = process.env.NOTIFY_TO || 'akparida28@gmail.com'; // Receiver email
     const disclaimer = process.env.DISCLAIMER_TEXT || 'Local POC notification via Mailpit';
 
@@ -124,6 +124,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
               <li><strong>Reported:</strong> ${new Date(report.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</li>
             </ul>
             ${photoAttachment ? '<p>📷 <strong>Photo evidence attached</strong></p>' : ''}
+            <hr>
+            <p>Sincerely,<br><strong>Bengaluru Infra AI Agent</strong><br><em>Automated Civic Reporting System</em></p>
             <hr>
             <p><em>${disclaimer}</em></p>
           `;

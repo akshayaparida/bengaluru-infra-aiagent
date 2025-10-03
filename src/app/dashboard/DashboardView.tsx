@@ -154,7 +154,17 @@ export default function DashboardView({ refreshToken }: { refreshToken?: string 
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
             {reports.map((r) => (
               <li key={r.id} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 10, border: '1px solid #222', background: '#0b0b0b', borderRadius: 8, padding: 8 }}>
-                <img src={`/api/reports/${r.id}/photo`} alt="photo" style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 6 }} />
+                <img 
+                  src={`/api/reports/${r.id}/photo`} 
+                  alt="photo" 
+                  style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 6, backgroundColor: '#333' }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'flex';
+                    (e.target as HTMLImageElement).style.alignItems = 'center';
+                    (e.target as HTMLImageElement).style.justifyContent = 'center';
+                    (e.target as HTMLImageElement).alt = '📷';
+                  }}
+                />
                 <div>
                   <div style={{ fontWeight: 600, marginBottom: 4, color: '#ddd' }}>{r.description}</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 12 }}>
