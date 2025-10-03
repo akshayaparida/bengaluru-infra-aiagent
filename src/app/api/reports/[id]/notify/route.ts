@@ -21,7 +21,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const enabled = String(process.env.ENABLE_EMAIL).toLowerCase() === 'true';
     if (!enabled) {
       // Mark as simulated email for dashboard visibility
-      await prisma.report.update({ where: { id }, data: { emailedAt: new Date(), emailMessageId: 'simulated' } }).catch(() => {});
+      await prisma.report.update({ where: { id }, data: { emailedAt: new Date(), emailMessageId: 'simulated' } });
 
       // Optionally trigger a tweet in background even when email is simulated
       const shouldAutoTweet = String(process.env.AUTO_TWEET).toLowerCase() === 'true';
@@ -34,16 +34,34 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const host = process.env.SMTP_HOST || 'localhost';
     const port = Number(process.env.SMTP_PORT || '1025');
-    const from = process.env.FROM_EMAIL || 'infra-agent@localhost';
-    const to = process.env.NOTIFY_TO || from; // POC: send to ourselves or configured recipient
+    // Agent email configuration
+    const from = process.env.FROM_EMAIL || 'blrinfraaiagent@gmail.com';
+    const to = process.env.NOTIFY_TO || 'akparida28@gmail.com'; // Receiver email
     const disclaimer = process.env.DISCLAIMER_TEXT || 'Local POC notification via Mailpit';
 
-    const transporter = nodemailer.createTransport({
+    // SMTP authentication (required for Gmail)
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPassword = process.env.SMTP_PASSWORD;
+    
+    // Configure transporter with optional authentication
+    const transportConfig: any = {
       host,
       port,
-      secure: false,
-      tls: { rejectUnauthorized: false },
-    });
+      secure: port === 465, // Use TLS for port 465, STARTTLS for 587
+    };
+    
+    // Add authentication if credentials are provided (Gmail requires this)
+    if (smtpUser && smtpPassword) {
+      transportConfig.auth = {
+        user: smtpUser,
+        pass: smtpPassword,
+      };
+    } else {
+      // For local Mailpit (no auth needed)
+      transportConfig.tls = { rejectUnauthorized: false };
+    }
+    
+    const transporter = nodemailer.createTransport(transportConfig);
 
     // Get photo attachment
     const storageDir = process.env.FILE_STORAGE_DIR || path.join(process.cwd(), '.data', 'uploads');
@@ -132,7 +150,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const info = await transporter.sendMail(mailOptions);
 
     // Persist email delivery metadata for dashboard
-    await prisma.report.update({ where: { id }, data: { emailedAt: new Date(), emailMessageId: info.messageId } }).catch(() => {});
+    await prisma.report.update({ where: { id }, data: { emailedAt: new Date(), emailMessageId: info.messageId } });
 
     // Optionally trigger a tweet in background (feature-flagged)
     const shouldAutoTweet = String(process.env.AUTO_TWEET).toLowerCase() === 'true';

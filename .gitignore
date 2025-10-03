@@ -26,6 +26,7 @@
 
 # local storage (uploads, cache)
 .data/
+logs/
 
 # debug
 npm-debug.log*
