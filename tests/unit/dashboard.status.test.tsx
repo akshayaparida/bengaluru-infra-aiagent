@@ -35,7 +35,6 @@ describe("DashboardView statuses", () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => reports })
       .mockResolvedValueOnce({ ok: true, json: async () => budgets });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (global as any).fetch = fetchMock;
 
     render(<DashboardView />);

@@ -16,16 +16,20 @@ function setupNavigatorMocks() {
 
 describe("ServiceWorkerClient", () => {
   beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (global as any).navigator = { serviceWorker: {} };
   });
+  
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
   it("unregisters service worker in development", async () => {
-    // Simulate dev
-    process.env.NODE_ENV = "development";
+    // Simulate dev by defining property
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'development',
+      writable: true,
+      configurable: true
+    });
     const { getRegistrations, unregister } = setupNavigatorMocks();
 
     render(<ServiceWorkerClient />);

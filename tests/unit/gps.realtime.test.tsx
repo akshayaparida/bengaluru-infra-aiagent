@@ -18,6 +18,9 @@ describe("Real-time GPS Location Detection", () => {
   let mockGeolocation: any;
   
   beforeEach(() => {
+    // Clean up DOM before each test
+    document.body.innerHTML = '';
+    
     // Mock the geolocation API
     mockGeolocation = {
       getCurrentPosition: vi.fn()
@@ -35,6 +38,8 @@ describe("Real-time GPS Location Detection", () => {
   
   afterEach(() => {
     vi.clearAllMocks();
+    // Clean up DOM after each test
+    document.body.innerHTML = '';
   });
 
   it("should get fresh GPS location when clicking 'Get GPS location' button", async () => {

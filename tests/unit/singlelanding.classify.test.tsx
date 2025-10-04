@@ -35,7 +35,6 @@ describe("SingleLanding - classification flow", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, category: "pothole", severity: "high", simulated: false }) })
       // 2) notify (we don't care about body here)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, simulated: true }) });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (global as any).fetch = fetchMock;
 
     render(<SingleLanding />);
