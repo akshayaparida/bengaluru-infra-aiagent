@@ -162,7 +162,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       
       // Post tweet with or without media
       // Note: reply_settings controls who can reply (not where it appears)
-      const tweetPayload: any = { 
+      const tweetPayload: { text: string; media?: { media_ids: string[] } } = { 
         text
         // No reply_settings needed - tweets appear in Posts by default when not replying to anyone
       };
@@ -174,21 +174,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const twId = result.data?.id || '';
       await prisma.report.update({ where: { id }, data: { tweetedAt: new Date(), tweetId: twId } });
       return NextResponse.json({ ok: true, simulated: false, tweetId: twId, hasMedia: !!mediaId }, { status: 200 });
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Log detailed error for debugging (without secrets)
-      console.error('[Twitter Error] Code:', err?.code);
-      console.error('[Twitter Error] Message:', err?.message);
-      console.error('[Twitter Error] Data:', JSON.stringify(err?.data || {}));
-      console.error('[Twitter Error] RateLimit:', JSON.stringify(err?.rateLimit || {}));
+      const error = err as { code?: string | number; message?: string; data?: unknown; rateLimit?: unknown };
+      console.error('[Twitter Error] Code:', error?.code);
+      console.error('[Twitter Error] Message:', error?.message);
+      console.error('[Twitter Error] Data:', JSON.stringify(error?.data || {}));
+      console.error('[Twitter Error] RateLimit:', JSON.stringify(error?.rateLimit || {}));
       
       // Specific handling for rate limits
-      const errorCode = String(err?.code || '');
-      if (errorCode === '429' || err?.message?.includes('Too Many Requests')) {
+      const errorCode = String(error?.code || '');
+      if (errorCode === '429' || error?.message?.includes('Too Many Requests')) {
         return NextResponse.json({ 
           ok: false, 
           reason: 'rate_limit_exceeded', 
-          detail: err?.data?.detail || err?.message || 'Twitter rate limit exceeded',
-          error: err?.data || {}
+          detail: (error?.data as { detail?: string })?.detail || error?.message || 'Twitter rate limit exceeded',
+          error: error?.data || {}
         }, { status: 429 });
       }
       
@@ -196,7 +197,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ 
         ok: false, 
         reason: 'twitter_post_failed', 
-        detail: String(err?.code || err?.message || 'error'),
+        detail: String(error?.code || error?.message || 'error'),
         hint: errorCode === '403' ? 'Check Twitter app permissions' : undefined
       }, { status: 502 });
     }

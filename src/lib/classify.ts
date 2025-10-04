@@ -37,10 +37,10 @@ export async function classifyViaMcp(
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ description }),
       signal: ctrl.signal,
-    } as any);
+    });
     clearTimeout(id);
-    if (!res || !(res as any).ok) throw new Error('mcp_http_error');
-    const data: any = await (res as any).json();
+    if (!res || !res.ok) throw new Error('mcp_http_error');
+    const data = await res.json() as { category?: string; severity?: string };
 
     const cat = String(data?.category || '').toLowerCase();
     const sev = String(data?.severity || '').toLowerCase();

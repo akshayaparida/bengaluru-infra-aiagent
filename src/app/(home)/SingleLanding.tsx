@@ -23,8 +23,8 @@ export default function SingleLanding() {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body?.error || "notify failed");
       setNotifyMsg(body?.simulated ? "Email simulated (Mailpit off)." : `Email sent. id=${body?.messageId || "ok"}`);
-    } catch (e: any) {
-      setNotifyMsg(e?.message || "Failed to send email");
+    } catch (e: unknown) {
+      setNotifyMsg(e instanceof Error ? e.message : "Failed to send email");
     } finally {
       setLoading((s) => ({ ...s, notify: false }));
     }
@@ -39,8 +39,8 @@ export default function SingleLanding() {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body?.error || body?.reason || "tweet failed");
       setTweetMsg(body?.simulated ? "Tweet simulated (no external post)." : `Tweet posted id=${body?.tweetId}`);
-    } catch (e: any) {
-      setTweetMsg(e?.message || "Failed to tweet");
+    } catch (e: unknown) {
+      setTweetMsg(e instanceof Error ? e.message : "Failed to tweet");
     } finally {
       setLoading((s) => ({ ...s, tweet: false }));
     }
@@ -59,9 +59,9 @@ export default function SingleLanding() {
       const simulated = Boolean(body?.simulated);
       setClassification({ category, severity, simulated });
       setClassifyMsg(`Classified: ${category || 'n/a'} / ${severity || 'n/a'}${simulated ? ' (simulated)' : ''}`);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setClassification(null);
-      setClassifyMsg(e?.message || "Failed to classify");
+      setClassifyMsg(e instanceof Error ? e.message : "Failed to classify");
     } finally {
       setLoading((s) => ({ ...s, classify: false }));
     }

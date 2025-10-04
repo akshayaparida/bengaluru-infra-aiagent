@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const smtpPassword = process.env.SMTP_PASSWORD;
     
     // Configure transporter with optional authentication
-    const transportConfig: any = {
+    const transportConfig: nodemailer.TransportOptions = {
       host,
       port,
       secure: port === 465, // Use TLS for port 465, STARTTLS for 587
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     }
 
-    const mailOptions: any = {
+    const mailOptions: nodemailer.SendMailOptions = {
       from,
       to,
       subject,

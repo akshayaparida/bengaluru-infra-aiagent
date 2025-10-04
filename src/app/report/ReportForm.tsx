@@ -164,7 +164,7 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
       }
       throw new Error('No valid GPS reading obtained');
       
-    } catch (e1: any) {
+    } catch (e1: unknown) {
       setMessage('📍 Falling back to network-based location...');
       try {
         // Fallback to network-based location
@@ -186,7 +186,8 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
           locationName
         };
       } catch (e2) {
-        throw new Error(`GPS failed: ${e1?.message || 'Unable to get location'}`);
+        const errorMsg = e1 instanceof Error ? e1.message : 'Unable to get location';
+        throw new Error(`GPS failed: ${errorMsg}`);
       }
     } finally {
       setLocationLoading(false);
@@ -195,9 +196,9 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
   }
 
   async function embedGpsInJpegDataURL(dataUrl: string, latNum: number, lngNum: number, date?: Date) {
-    // @ts-ignore - no official types
+    // @ts-expect-error - piexifjs has no official types
     const piexif = await import('piexifjs');
-    const gps: any = {};
+    const gps: Record<number, unknown> = {};
     gps[piexif.GPSIFD.GPSLatitudeRef] = latNum >= 0 ? 'N' : 'S';
     gps[piexif.GPSIFD.GPSLatitude] = degToDmsRational(latNum);
     gps[piexif.GPSIFD.GPSLongitudeRef] = lngNum >= 0 ? 'E' : 'W';
@@ -226,8 +227,9 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
       setLocationName(locationName);
       setMessage(`✅ Location: ${locationName} (accuracy: ${acc.toFixed(0)}m)`);
       setTimeout(() => setMessage(''), 5000);
-    } catch (e: any) {
-      setMessage(`❌ Location error: ${e?.message || 'unable to get location'}`);
+    } catch (e: unknown) {
+      const errorMsg = e instanceof Error ? e.message : 'unable to get location';
+      setMessage(`❌ Location error: ${errorMsg}`);
       setAccuracy(null);
       setLocationName("");
     }
@@ -254,8 +256,9 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
           videoRef.current.play().catch(() => {});
         }
       });
-    } catch (err: any) {
-      setMessage(err?.message || "Camera access failed. Falling back to file upload.");
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Camera access failed";
+      setMessage(`${errorMsg}. Falling back to file upload.`);
       fileInputRef.current?.click();
     }
   }, []);
@@ -291,8 +294,9 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
       setLocationName(locName);
       setMessage(`✅ Photo captured at ${locName} (accuracy: ${accNum.toFixed(0)}m)`);
       setTimeout(() => setMessage(''), 5000);
-    } catch (e: any) {
-      setMessage(`❌ GPS error: ${e?.message || 'unable to get location'}`);
+    } catch (e: unknown) {
+      const errorMsg = e instanceof Error ? e.message : 'unable to get location';
+      setMessage(`❌ GPS error: ${errorMsg}`);
       // Don't proceed without location
       return;
     }
@@ -347,8 +351,9 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
         latNum = loc.lat;
         lngNum = loc.lng;
         setMessage(`✅ Report location: ${loc.locationName}`);
-      } catch (e: any) {
-        setMessage(`❌ Cannot submit without GPS location. ${e?.message}`);
+      } catch (e: unknown) {
+        const errorMsg = e instanceof Error ? e.message : 'unknown error';
+        setMessage(`❌ Cannot submit without GPS location. ${errorMsg}`);
         setSubmitting(false);
         return;
       }
@@ -370,8 +375,9 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
       setDescription("");
       setFile(null);
       setPreviewUrl(null);
-    } catch (err: any) {
-      setMessage(err?.message || "Failed to submit report.");
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to submit report.";
+      setMessage(errorMsg);
     } finally {
       setSubmitting(false);
     }

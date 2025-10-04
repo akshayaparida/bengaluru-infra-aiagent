@@ -1,6 +1,3 @@
-// Prisma schema for Bengaluru Infra AI Agent (local POC)
-// DB: Postgres (see DATABASE_URL in .env)
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,27 +7,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Report {
+  id             String       @id @default(cuid())
+  createdAt      DateTime     @default(now())
+  description    String
+  lat            Float
+  lng            Float
+  photoPath      String
+  status         ReportStatus @default(NEW)
+  category       String?
+  severity       String?
+  emailMessageId String?
+  emailedAt      DateTime?
+  tweetId        String?
+  tweetedAt      DateTime?
+
+  @@index([createdAt])
+}
+
 enum ReportStatus {
   NEW
   TRIAGED
   NOTIFIED
-}
-
-model Report {
-  id              String       @id @default(cuid())
-  createdAt       DateTime     @default(now())
-  description     String
-  lat             Float
-  lng             Float
-  photoPath       String
-  status          ReportStatus @default(NEW)
-  category        String?
-  severity        String?
-  // Automated workflow fields (optional for backward compatibility)
-  emailedAt       DateTime?
-  emailMessageId  String?
-  tweetedAt       DateTime?
-  tweetId         String?
-
-  @@index([createdAt])
 }

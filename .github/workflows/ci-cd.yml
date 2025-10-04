@@ -67,7 +67,7 @@ jobs:
         run: pnpm prisma generate
       
       - name: Run unit tests
-        run: pnpm test --run tests/unit/
+        run: pnpm vitest run tests/unit/
         env:
           CI: true
 
@@ -118,7 +118,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/infra?schema=public
       
       - name: Run integration tests
-        run: pnpm test --run tests/integration/
+        run: pnpm vitest run tests/integration/
         env:
           CI: true
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/infra?schema=public
