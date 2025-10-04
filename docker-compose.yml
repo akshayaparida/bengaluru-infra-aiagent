@@ -16,17 +16,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: bia-mailpit
-    ports:
-      - "8025:8025"
-      - "1025:1025"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8025"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
   mcp:
     build: ./mcp-gateway
     container_name: bia-mcp
