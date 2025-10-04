@@ -81,14 +81,11 @@ export default function DashboardView({ refreshToken }: { refreshToken?: string 
       await import("leaflet/dist/leaflet.css");
       if (cancelled) { initLockRef.current = false; return; }
       // Fix default icon paths in Next bundles
-      // @ts-expect-error - dynamic imports of PNG files don't have types
-      const iconRetinaUrl = (await import('leaflet/dist/images/marker-icon-2x.png')).default;
-      // @ts-expect-error - dynamic imports of PNG files don't have types
-      const iconUrl = (await import('leaflet/dist/images/marker-icon.png')).default;
-      // @ts-expect-error - dynamic imports of PNG files don't have types
-      const shadowUrl = (await import('leaflet/dist/images/marker-shadow.png')).default;
-      // @ts-expect-error - Icon.Default.mergeOptions exists but not in types
-      L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
+      const iconRetinaUrl = (await import('leaflet/dist/images/marker-icon-2x.png')).default as unknown as string;
+      const iconUrl = (await import('leaflet/dist/images/marker-icon.png')).default as unknown as string;
+      const shadowUrl = (await import('leaflet/dist/images/marker-shadow.png')).default as unknown as string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (L.Icon.Default as any).mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
 
       // Ensure a fresh inner container to avoid "already initialized" on the same element
       if (!mapInnerRef.current && mapElRef.current) {
@@ -137,6 +134,7 @@ export default function DashboardView({ refreshToken }: { refreshToken?: string 
       // A production app should manage a layer group.
       // We'll just add markers anew without heavy cleanup; acceptable for POC scale.
       reports.forEach((r) => {
+        if (!mapRef.current) return;
         const m = L.marker([r.lat, r.lng]).addTo(mapRef.current);
         m.bindPopup(`<strong>${escapeHtml(r.description)}</strong><br/>${r.lat.toFixed(4)}, ${r.lng.toFixed(4)}`);
       });

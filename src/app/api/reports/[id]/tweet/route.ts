@@ -162,7 +162,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       
       // Post tweet with or without media
       // Note: reply_settings controls who can reply (not where it appears)
-      const tweetPayload: { text: string; media?: { media_ids: string[] } } = { 
+      const tweetPayload: { text: string; media?: { media_ids: [string] } } = { 
         text
         // No reply_settings needed - tweets appear in Posts by default when not replying to anyone
       };

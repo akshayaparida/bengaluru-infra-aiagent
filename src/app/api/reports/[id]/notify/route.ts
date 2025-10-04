@@ -44,22 +44,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const smtpPassword = process.env.SMTP_PASSWORD;
     
     // Configure transporter with optional authentication
-    const transportConfig: nodemailer.TransportOptions = {
-      host,
-      port,
-      secure: port === 465, // Use TLS for port 465, STARTTLS for 587
-    };
-    
-    // Add authentication if credentials are provided (Gmail requires this)
-    if (smtpUser && smtpPassword) {
-      transportConfig.auth = {
-        user: smtpUser,
-        pass: smtpPassword,
-      };
-    } else {
-      // For local Mailpit (no auth needed)
-      transportConfig.tls = { rejectUnauthorized: false };
-    }
+    // Build config object dynamically to satisfy TypeScript
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const transportConfig = (smtpUser && smtpPassword
+      ? {
+          host,
+          port,
+          secure: port === 465, // Use TLS for port 465, STARTTLS for 587
+          auth: {
+            user: smtpUser,
+            pass: smtpPassword,
+          },
+        }
+      : {
+          host,
+          port,
+          secure: port === 465,
+          tls: { rejectUnauthorized: false },
+        }) as any as nodemailer.TransportOptions;
     
     const transporter = nodemailer.createTransport(transportConfig);
 
