@@ -45,7 +45,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     
     // Configure transporter with optional authentication
     // Build config object dynamically to satisfy TypeScript
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transportConfig = (smtpUser && smtpPassword
       ? {
           host,
@@ -61,6 +60,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           port,
           secure: port === 465,
           tls: { rejectUnauthorized: false },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }) as any as nodemailer.TransportOptions;
     
     const transporter = nodemailer.createTransport(transportConfig);
