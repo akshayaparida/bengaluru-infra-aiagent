@@ -1,0 +1,119 @@
+# Production Docker Compose Configuration
+# This is for running the full stack in production-like environment
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bia-app-prod
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Database
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/infra?schema=public
+      
+      # MCP Gateway
+      - MCP_BASE_URL=http://mcp:8008
+      
+      # Application
+      - NODE_ENV=production
+      - APP_BASE_URL=http://localhost:3000
+      
+      # Feature flags
+      - ENABLE_EMAIL=true
+      - ENABLE_CLASSIFICATION=true
+      - SIMULATE_TWITTER=false
+      
+      # AI Cost Control
+      - AI_DAILY_LIMIT=5
+      
+      # File storage
+      - FILE_STORAGE_DIR=.data/uploads
+      
+      # Secrets (use secrets file or env vars in real prod)
+      - CEREBRAS_API_KEY=${CEREBRAS_API_KEY}
+      - TWITTER_CONSUMER_KEY=${TWITTER_CONSUMER_KEY}
+      - TWITTER_CONSUMER_SECRET=${TWITTER_CONSUMER_SECRET}
+      - TWITTER_ACCESS_TOKEN=${TWITTER_ACCESS_TOKEN}
+      - TWITTER_ACCESS_SECRET=${TWITTER_ACCESS_SECRET}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - FROM_EMAIL=${FROM_EMAIL}
+      - NOTIFY_TO=${NOTIFY_TO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mcp:
+        condition: service_started
+    volumes:
+      - app-data:/app/.data
+    networks:
+      - bia-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:17.5-alpine
+    container_name: bia-postgres-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: infra
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-prod:/var/lib/postgresql/data
+    networks:
+      - bia-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d infra"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mcp:
+    build: ./mcp-gateway
+    container_name: bia-mcp-prod
+    restart: unless-stopped
+    environment:
+      - PORT=8008
+      - CEREBRAS_API_KEY=${CEREBRAS_API_KEY}
+    ports:
+      - "8008:8008"
+    networks:
+      - bia-network
+
+  # Nginx reverse proxy (optional but recommended for production)
+  nginx:
+    image: nginx:alpine
+    container_name: bia-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    networks:
+      - bia-network
+
+volumes:
+  pgdata-prod:
+    driver: local
+  app-data:
+    driver: local
+
+networks:
+  bia-network:
+    driver: bridge

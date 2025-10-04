@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { classifyViaMcp } from '../../../../../lib/classify';
+import { getAIUsageLimiter } from '../../../../../lib/ai-usage-limiter';
 
 // Inline simulated classifier to avoid module resolution issues during tests
 function classifySimulatedLocal(description: string) {
@@ -36,17 +37,36 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const mcpBaseUrl = process.env.MCP_BASE_URL || '';
+    
+    // Check AI usage limit to control costs
+    const aiLimiter = await getAIUsageLimiter();
+    const canUseAI = await aiLimiter.canUseAI();
 
-    // Try MCP first; on failure, fall back to simulated, but still update DB for demo continuity
+    // Try MCP first (if within daily limit); on failure or limit reached, fall back to simulated
     let category = 'traffic';
     let severity = 'medium';
     let simulated = false;
-    try {
-      const via = await classifyViaMcp(report.description, mcpBaseUrl);
-      category = via.category;
-      severity = via.severity;
-      simulated = via.simulated;
-    } catch {
+    
+    if (canUseAI) {
+      try {
+        const via = await classifyViaMcp(report.description, mcpBaseUrl);
+        category = via.category;
+        severity = via.severity;
+        simulated = via.simulated;
+        
+        // Record usage only if AI classification succeeded
+        if (!simulated) {
+          await aiLimiter.recordUsage();
+        }
+      } catch {
+        const sim = classifySimulatedLocal(report.description);
+        category = sim.category;
+        severity = sim.severity;
+        simulated = true;
+      }
+    } else {
+      // Daily AI limit reached, use simulated classification
+      console.log('AI daily limit reached, using simulated classification');
       const sim = classifySimulatedLocal(report.description);
       category = sim.category;
       severity = sim.severity;

@@ -1,0 +1,22 @@
+
+> bengaluru-infra-aiagent@0.1.0 dev /home/akshayaparida/bengaluru-infra-aiagent
+> next dev --turbopack
+
+ ⚠ Port 3000 is in use by an unknown process, using available port 3001 instead.
+   ▲ Next.js 15.5.4 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://10.140.93.225:3001
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 852ms
+   Reload env: .env.local
+   Reload env: .env.local
+ ⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+   ▲ Next.js 15.5.4 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://10.140.93.225:3001
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 889ms
