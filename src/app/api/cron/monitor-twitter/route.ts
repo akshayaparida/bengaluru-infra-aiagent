@@ -62,6 +62,15 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
   
   try {
+    // Check if Twitter monitoring is enabled
+    const monitoringEnabled = String(process.env.ENABLE_TWITTER_MONITORING).toLowerCase() === 'true';
+    if (!monitoringEnabled) {
+      return NextResponse.json({
+        success: false,
+        message: 'Twitter monitoring is disabled (ENABLE_TWITTER_MONITORING=false)',
+      }, { status: 200 });
+    }
+    
     // Verify environment variables
     const requiredEnvVars = [
       'TWITTER_CONSUMER_KEY',
