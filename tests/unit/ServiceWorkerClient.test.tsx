@@ -16,7 +16,6 @@ function setupNavigatorMocks() {
 
 describe("ServiceWorkerClient", () => {
   beforeEach(() => {
-    // @ts-expect-error - allow override
     global.navigator = { serviceWorker: {} } as any;
   });
   afterEach(() => {
@@ -25,7 +24,7 @@ describe("ServiceWorkerClient", () => {
 
   it("unregisters service worker in development", async () => {
     // Simulate dev
-    process.env.NODE_ENV = "development";
+    vi.stubEnv('NODE_ENV', 'development');
     const { getRegistrations, unregister } = setupNavigatorMocks();
 
     render(<ServiceWorkerClient />);

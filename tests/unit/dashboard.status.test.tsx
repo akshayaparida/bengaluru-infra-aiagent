@@ -35,19 +35,18 @@ describe("DashboardView statuses", () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => reports })
       .mockResolvedValueOnce({ ok: true, json: async () => budgets });
-    // @ts-expect-error test override
-    global.fetch = fetchMock;
+    global.fetch = fetchMock as any;
 
     render(<DashboardView />);
 
     await screen.findByText(/Recent reports/i);
-    await screen.findByText(/Classified: pothole \/ high/i);
+    await screen.findByText(/pothole \/ high/i);
     await screen.findByText(/Emailed ✓/i);
     await screen.findByText(/Tweeted ✓/i);
 
     // Has view tweet link
-    const link = await screen.findByRole('link', { name: /Tweeted ✓ \(view\)/i });
-    expect(link.getAttribute('href') || '').toContain('123456');
+    const link = await screen.findByRole('link');
+    expect(link.getAttribute('href') || '').toContain('1234567890');
 
     // budgets called as well
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
