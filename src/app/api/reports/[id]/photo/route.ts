@@ -28,7 +28,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const ct = isPng ? "image/png" : "image/jpeg";
 
     const stream = fs.createReadStream(fullPath);
-    return new NextResponse(stream as any, {
+    // @ts-expect-error - NextResponse accepts ReadableStream but Node streams work in runtime
+    return new NextResponse(stream, {
       status: 200,
       headers: { "content-type": ct, "cache-control": "no-store" },
     });

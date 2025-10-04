@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import type * as L from "leaflet";
 
 type ReportItem = {
   id: string;
@@ -27,7 +28,7 @@ type BudgetItem = {
 };
 
 export default function DashboardView({ refreshToken }: { refreshToken?: string | number } = {}) {
-  const mapRef = React.useRef<any>(null);
+  const mapRef = React.useRef<L.Map | null>(null);
   const mapElRef = React.useRef<HTMLDivElement | null>(null);
   const mapInnerRef = React.useRef<HTMLDivElement | null>(null);
   const initLockRef = React.useRef<boolean>(false);
@@ -71,20 +72,22 @@ export default function DashboardView({ refreshToken }: { refreshToken?: string 
       if (mapRef.current) return;
       if (initLockRef.current) return; // synchronous guard
       // If either outer or existing inner is already initialized, skip
-      if ((mapElRef.current as any)?._leaflet_id || (mapInnerRef.current as any)?._leaflet_id) return;
+      const leafletEl = mapElRef.current as HTMLElement & { _leaflet_id?: number };
+      const leafletInner = mapInnerRef.current as HTMLElement & { _leaflet_id?: number };
+      if (leafletEl?._leaflet_id || leafletInner?._leaflet_id) return;
       initLockRef.current = true;
 
       const L = await import("leaflet");
       await import("leaflet/dist/leaflet.css");
       if (cancelled) { initLockRef.current = false; return; }
       // Fix default icon paths in Next bundles
-      //@ts-ignore
+      // @ts-expect-error - dynamic imports of PNG files don't have types
       const iconRetinaUrl = (await import('leaflet/dist/images/marker-icon-2x.png')).default;
-      //@ts-ignore
+      // @ts-expect-error - dynamic imports of PNG files don't have types
       const iconUrl = (await import('leaflet/dist/images/marker-icon.png')).default;
-      //@ts-ignore
+      // @ts-expect-error - dynamic imports of PNG files don't have types
       const shadowUrl = (await import('leaflet/dist/images/marker-shadow.png')).default;
-      //@ts-ignore
+      // @ts-expect-error - Icon.Default.mergeOptions exists but not in types
       L.Icon.Default.mergeOptions({ iconRetinaUrl, iconUrl, shadowUrl });
 
       // Ensure a fresh inner container to avoid "already initialized" on the same element
@@ -97,7 +100,8 @@ export default function DashboardView({ refreshToken }: { refreshToken?: string 
       }
 
       // If a concurrent effect has already created a map, bail out
-      if (cancelled || mapRef.current || (mapInnerRef.current as any)?._leaflet_id) {
+      const leafletCheck = mapInnerRef.current as HTMLElement & { _leaflet_id?: number };
+      if (cancelled || mapRef.current || leafletCheck?._leaflet_id) {
         initLockRef.current = false;
         return;
       }

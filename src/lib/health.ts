@@ -75,7 +75,7 @@ export async function checkMcp(baseUrl: string, fetchFn: typeof fetch = fetch, t
     const id = setTimeout(() => ctrl.abort(), timeoutMs);
     const res = await fetchFn(baseUrl, { method: 'HEAD', signal: ctrl.signal }).catch(() => fetchFn(baseUrl, { method: 'GET', signal: ctrl.signal }));
     clearTimeout(id);
-    return !!res && (res as any).ok === true;
+    return !!res && res.ok === true;
   } catch {
     return false;
   }
