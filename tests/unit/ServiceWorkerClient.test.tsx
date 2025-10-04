@@ -9,15 +9,15 @@ import ServiceWorkerClient from "../../src/components/ServiceWorkerClient";
 function setupNavigatorMocks() {
   const unregister = vi.fn(() => Promise.resolve(true));
   const getRegistrations = vi.fn(() => Promise.resolve([{ unregister }]));
-  // @ts-expect-error - partial mock
-  global.navigator.serviceWorker = { getRegistrations } as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (global.navigator as any).serviceWorker = { getRegistrations };
   return { getRegistrations, unregister };
 }
 
 describe("ServiceWorkerClient", () => {
   beforeEach(() => {
-    // @ts-expect-error - allow override
-    global.navigator = { serviceWorker: {} } as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (global as any).navigator = { serviceWorker: {} };
   });
   afterEach(() => {
     vi.restoreAllMocks();

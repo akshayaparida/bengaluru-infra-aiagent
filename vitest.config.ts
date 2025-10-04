@@ -1,10 +1,9 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
-import { loadEnv } from 'vite';
 
-export default defineConfig(({ mode }) => {
-  // Load env file based on mode
-  const env = loadEnv(mode, process.cwd(), '');
+export default defineConfig(() => {
+  // Load env vars from process.env
+  const env = process.env;
   
   return {
     resolve: {
