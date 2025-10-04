@@ -4,6 +4,7 @@ import { z } from 'zod';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import sharp from 'sharp';
 
 const prisma = new PrismaClient();
 
@@ -49,20 +50,33 @@ export async function POST(request: Request) {
     const storageDir = process.env.FILE_STORAGE_DIR || path.join(process.cwd(), '.data', 'uploads');
     await ensureDir(storageDir);
 
-    const ext = path.extname(sanitizeBaseName(photo.name)) || (photo.type === 'image/png' ? '.png' : '.jpg');
+    // Always save as JPEG for consistency and to apply EXIF rotation
     const rand = crypto.randomBytes(8).toString('hex');
-    const fileName = `${Date.now()}-${rand}${ext}`;
+    const fileName = `${Date.now()}-${rand}.jpg`;
     const fullPath = path.join(storageDir, fileName);
 
+    // Process image: auto-rotate based on EXIF orientation and ensure correct display
     const buf = Buffer.from(await photo.arrayBuffer());
-    await fs.writeFile(fullPath, buf);
+    
+    try {
+      // Sharp automatically reads EXIF orientation and rotates the image accordingly
+      // The rotate() call without arguments auto-rotates based on EXIF Orientation tag
+      await sharp(buf)
+        .rotate() // Auto-rotate based on EXIF orientation
+        .jpeg({ quality: 90 }) // Convert to JPEG with good quality
+        .toFile(fullPath);
+    } catch (imageError) {
+      console.error('[image processing error]', imageError);
+      // Fallback: save original buffer if sharp processing fails
+      await fs.writeFile(fullPath, buf);
+    }
 
     const report = await prisma.report.create({
       data: {
         description: parsed.data.description,
         lat: parsed.data.lat,
         lng: parsed.data.lng,
-        photoPath: fullPath,
+        photoPath: fileName,
         status: ReportStatus.NEW,
       },
       select: { id: true },

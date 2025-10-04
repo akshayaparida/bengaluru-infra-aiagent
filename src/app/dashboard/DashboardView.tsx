@@ -140,80 +140,124 @@ export default function DashboardView({ refreshToken }: { refreshToken?: string 
   }, [reports]);
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "1rem", padding: "1rem" }}>
-      <section>
-        <h2>Map</h2>
-        <div ref={mapElRef} style={{ height: "60vh", width: "100%", border: "1px solid #ddd", borderRadius: 8 }} />
-        <div style={{ marginTop: 8, color: "#666" }}>
-          Showing {reports.length} report{reports.length === 1 ? "" : "s"}
-        </div>
+    <div className="p-4 md:p-6 lg:p-8 max-w-[1920px] mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 lg:gap-8">
+        <section className="space-y-4">
+          <h2 className="text-2xl font-bold text-neutral-100">Map</h2>
+          <div 
+            ref={mapElRef} 
+            className="h-[50vh] md:h-[60vh] lg:h-[65vh] w-full border border-neutral-700 rounded-xl shadow-lg overflow-hidden"
+          />
+          <div className="text-sm text-neutral-400">
+            Showing {reports.length} report{reports.length === 1 ? "" : "s"}
+          </div>
 
-        {/* Recent reports with status */}
-        <div style={{ marginTop: 16 }}>
-          <h3 style={{ marginBottom: 8 }}>Recent reports</h3>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
-            {reports.map((r) => (
-              <li key={r.id} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 10, border: '1px solid #222', background: '#0b0b0b', borderRadius: 8, padding: 8 }}>
-                <img 
-                  src={`/api/reports/${r.id}/photo`} 
-                  alt="photo" 
-                  style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 6, backgroundColor: '#333' }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'flex';
-                    (e.target as HTMLImageElement).style.alignItems = 'center';
-                    (e.target as HTMLImageElement).style.justifyContent = 'center';
-                    (e.target as HTMLImageElement).alt = '📷';
-                  }}
-                />
-                <div>
-                  <div style={{ fontWeight: 600, marginBottom: 4, color: '#ddd' }}>{r.description}</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, fontSize: 12 }}>
-                    {r.category && r.severity && (
-                      <span style={{ color: '#9ae6b4' }}>Classified: {r.category} / {r.severity}</span>
-                    )}
-                    {r.emailedAt && (
-                      <span style={{ color: '#9ae6b4' }}>Emailed ✓</span>
-                    )}
-                    {r.tweetedAt && (
-                      (r.tweetId && !r.tweetId.startsWith('sim-')) ? (
-                        <a href={`https://x.com/i/web/status/${r.tweetId}`} target="_blank" rel="noreferrer" style={{ color: '#9ae6b4' }}>Tweeted ✓ (view)</a>
-                      ) : (
-                        <span style={{ color: '#9ae6b4' }}>Tweeted ✓ (simulated)</span>
-                      )
-                    )}
-                    {!r.emailedAt && !r.tweetedAt && (
-                      <span style={{ color: '#999' }}>Processing…</span>
-                    )}
+          {/* Recent reports with status */}
+          <div className="space-y-3">
+            <h3 className="text-xl font-semibold text-neutral-100">Recent reports</h3>
+            <ul className="space-y-3">
+              {reports.map((r) => (
+                <li 
+                  key={r.id} 
+                  className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] lg:grid-cols-[160px_1fr] gap-3 md:gap-4 border border-neutral-800 bg-neutral-900/80 rounded-xl p-3 md:p-4 shadow-sm hover:bg-neutral-900/90 transition-colors"
+                >
+                  <img 
+                    src={`/api/reports/${r.id}/photo`} 
+                    alt="photo" 
+                    className="w-full h-20 md:h-24 lg:h-28 object-cover rounded-lg bg-neutral-800"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'flex';
+                      (e.target as HTMLImageElement).style.alignItems = 'center';
+                      (e.target as HTMLImageElement).style.justifyContent = 'center';
+                      (e.target as HTMLImageElement).alt = '📷';
+                    }}
+                  />
+                  <div className="min-w-0 space-y-2">
+                    <div className="font-semibold text-sm md:text-base text-neutral-100 line-clamp-2">{r.description}</div>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {r.category && r.severity && (
+                        <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-md">
+                          {r.category} / {r.severity}
+                        </span>
+                      )}
+                      {r.emailedAt && (
+                        <span className="px-2 py-1 bg-green-500/10 text-green-400 rounded-md inline-flex items-center gap-1">
+                          Emailed ✓
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                          </svg>
+                        </span>
+                      )}
+                      {r.tweetedAt && (
+                        (r.tweetId && !r.tweetId.startsWith('sim-')) ? (
+                          <a 
+                            href={`https://x.com/i/web/status/${r.tweetId}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-md hover:bg-blue-500/20 transition-colors inline-flex items-center gap-1"
+                          >
+                            Tweeted ✓
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                            (view)
+                          </a>
+                        ) : (
+                          <span className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-md inline-flex items-center gap-1">
+                            Tweeted ✓
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                            (sim)
+                          </span>
+                        )
+                      )}
+                      {!r.emailedAt && !r.tweetedAt && (
+                        <span className="px-2 py-1 bg-neutral-700 text-neutral-400 rounded-md animate-pulse">Processing…</span>
+                      )}
+                    </div>
+                    <div className="text-[10px] md:text-xs text-neutral-500">{new Date(r.createdAt).toLocaleString()}</div>
                   </div>
-                  <div style={{ fontSize: 11, color: '#777', marginTop: 4 }}>{new Date(r.createdAt).toLocaleString()}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+        
+        <aside className="space-y-4 lg:space-y-6">
+          <h2 className="text-2xl font-bold text-neutral-100">Transparency</h2>
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-neutral-300">Department filter</span>
+            <select 
+              value={depFilter} 
+              onChange={(e) => setDepFilter(e.target.value)} 
+              className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-neutral-100 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-600"
+            >
+              <option value="">All</option>
+              <option value="Roads">Roads</option>
+              <option value="Lighting">Lighting</option>
+              <option value="Waste">Waste</option>
+              <option value="Water">Water</option>
+              <option value="Parks">Parks</option>
+            </select>
+          </label>
+          <ul className="max-h-[50vh] lg:max-h-[60vh] overflow-auto border border-neutral-800 rounded-xl bg-neutral-900/50 divide-y divide-neutral-800">
+            {budgets.map((b) => (
+              <li key={b.id} className="p-3 md:p-4 hover:bg-neutral-900/70 transition-colors">
+                <div className="font-semibold text-sm text-neutral-100 mb-1">{b.budgetLine}</div>
+                <div className="text-xs text-neutral-400 space-x-2">
+                  <span>{b.department}</span>
+                  <span>•</span>
+                  <span>{b.contractor}</span>
+                  <span>•</span>
+                  <span className="text-emerald-400 font-medium">₹{b.amount.toLocaleString()}</span>
                 </div>
               </li>
             ))}
           </ul>
-        </div>
-      </section>
-      <aside>
-        <h2>Transparency</h2>
-        <label style={{ display: 'block', marginBottom: 8 }}>
-          Department filter
-          <select value={depFilter} onChange={(e) => setDepFilter(e.target.value)} style={{ marginLeft: 8 }}>
-            <option value="">All</option>
-            <option value="Roads">Roads</option>
-            <option value="Lighting">Lighting</option>
-            <option value="Waste">Waste</option>
-            <option value="Water">Water</option>
-            <option value="Parks">Parks</option>
-          </select>
-        </label>
-        <ul style={{ listStyle: "none", padding: 0, margin: 0, maxHeight: "50vh", overflow: "auto", border: "1px solid #eee", borderRadius: 6 }}>
-          {budgets.map((b) => (
-            <li key={b.id} style={{ padding: "8px 10px", borderBottom: "1px solid #f3f3f3" }}>
-              <div style={{ fontWeight: 600 }}>{b.budgetLine}</div>
-              <div style={{ fontSize: 12, color: "#666" }}>{b.department} • {b.contractor} • ₹{b.amount.toLocaleString()}</div>
-            </li>
-          ))}
-        </ul>
-      </aside>
+        </aside>
+      </div>
     </div>
   );
 }

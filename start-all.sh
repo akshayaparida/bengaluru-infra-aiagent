@@ -42,8 +42,8 @@ sleep 1
 mkdir -p logs
 
 # Start MCP Gateway (AI service) in background
-echo "🤖 Starting MCP Gateway (AI service) on port ${PORT:-8009}..."
-PORT=${PORT:-8009} node mcp-gateway/server.js > logs/mcp-gateway.log 2>&1 &
+echo "🤖 Starting MCP Gateway (AI service) on port ${PORT:-8008}..."
+PORT=${PORT:-8008} node mcp-gateway/server.js > logs/mcp-gateway.log 2>&1 &
 MCP_PID=$!
 echo "   ✅ MCP Gateway started (PID: $MCP_PID)"
 echo "   📝 Logs: logs/mcp-gateway.log"
@@ -52,7 +52,7 @@ echo "   📝 Logs: logs/mcp-gateway.log"
 sleep 2
 
 # Verify MCP Gateway is running
-if curl -s http://localhost:${PORT:-8009}/health > /dev/null; then
+if curl -s http://localhost:${PORT:-8008}/health > /dev/null; then
     echo "   ✅ MCP Gateway health check passed"
 else
     echo "   ⚠️  MCP Gateway health check failed (will use fallback templates)"
@@ -84,7 +84,7 @@ echo "✅ All services started successfully!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "🌐 Next.js App:       http://localhost:3000"
-echo "🤖 MCP Gateway (AI):  http://localhost:${PORT:-8009}"
+echo "🤖 MCP Gateway (AI):  http://localhost:${PORT:-8008}"
 echo ""
 echo "📊 Service Status:"
 echo "   MCP Gateway PID:   $MCP_PID"

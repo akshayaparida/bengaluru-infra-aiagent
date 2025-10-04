@@ -78,22 +78,40 @@ export default function SingleLanding() {
   }, [reportId, onClassify, onNotify]);
 
 return (
-    <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 p-4">
-      <section className="space-y-3">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-semibold text-neutral-100">Bengaluru Infra AI Reporter</h1>
-          <p className="text-sm text-neutral-400">Benagaluru infra ai agent that mail and tweet your infra issues to respective authorities via AI</p>
-        </header>
-        <div className="bg-neutral-900/60 backdrop-blur border border-neutral-800 rounded-xl p-4">
-          <ReportForm onSubmitted={setReportId} />
+    <main className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
+      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-10">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8 lg:gap-10">
+          {/* Report Form Section */}
+          <section className="space-y-4 md:space-y-6">
+            <header className="space-y-2">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-100 bg-gradient-to-r from-neutral-100 to-neutral-400 bg-clip-text text-transparent">
+                Bengaluru Infra AI Reporter
+              </h1>
+              <p className="text-sm md:text-base text-neutral-400 leading-relaxed max-w-2xl">
+                AI-powered civic reporting agent that automatically emails and tweets your infrastructure issues to respective authorities
+              </p>
+            </header>
+            
+            <div className="bg-neutral-900/80 backdrop-blur-xl border border-neutral-800 rounded-2xl shadow-2xl p-4 md:p-6 lg:p-8">
+              <ReportForm onSubmitted={setReportId} />
+            </div>
+
+            {/* Status indicators */}
+            {reportId && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+                <p className="text-sm text-emerald-400 font-medium">
+                  ✅ Report submitted successfully! Auto-processing in progress...
+                </p>
+              </div>
+            )}
+          </section>
+
+          {/* Dashboard Section */}
+          <aside className="bg-neutral-900/80 backdrop-blur-xl border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden">
+            <DashboardView refreshToken={reportId || 0} />
+          </aside>
         </div>
-
-      {/* Actions panel removed as flow is automated; dashboard will reflect statuses */}
-      </section>
-
-      <aside className="bg-neutral-900/60 backdrop-blur border border-neutral-800 rounded-xl p-2">
-        <DashboardView refreshToken={reportId || 0} />
-      </aside>
+      </div>
     </main>
   );
 }

@@ -435,7 +435,6 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
         type="file"
         name="photo"
         accept="image/*"
-        capture="environment"
         onChange={async (e) => {
           const f = e.target.files?.[0] || null;
           if (!f) {
