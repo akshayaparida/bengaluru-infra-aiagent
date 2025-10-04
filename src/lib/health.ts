@@ -83,27 +83,22 @@ export async function checkMcp(baseUrl: string, fetchFn: typeof fetch = fetch, t
 
 export async function getHealthStatus(opts: {
   createPgClient: CreatePgClient;
-  mailpitHost: string;
-  mailpitPort: number;
   mcpBaseUrl: string;
-  tcpConnect?: TcpConnect;
   fetchFn?: typeof fetch;
 }) {
-  const { createPgClient, mailpitHost, mailpitPort, mcpBaseUrl, tcpConnect = defaultTcpConnect, fetchFn = fetch } = opts;
+  const { createPgClient, mcpBaseUrl, fetchFn = fetch } = opts;
 
-  const [pg, mp, mcp] = await Promise.all([
+  const [pg, mcp] = await Promise.all([
     checkPostgres(createPgClient),
-    checkMailpit(mailpitHost, mailpitPort, tcpConnect),
     checkMcp(mcpBaseUrl, fetchFn),
   ]);
 
-  const allOk = pg && mp && mcp;
+  const allOk = pg && mcp;
   return {
     status: allOk ? 'ok' : 'degraded',
     services: {
       web: true,
       postgres: pg,
-      mailpit: mp,
       mcp,
     },
     timestamp: new Date().toISOString(),
