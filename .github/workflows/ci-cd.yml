@@ -38,7 +38,7 @@ jobs:
         run: pnpm lint
       
       - name: Type check
-        run: pnpm tsc --noEmit
+        run: pnpm exec tsc --noEmit
 
   # Job 2: Unit Tests
   test-unit:
@@ -67,7 +67,7 @@ jobs:
         run: pnpm prisma generate
       
       - name: Run unit tests
-        run: pnpm vitest run tests/unit/
+        run: pnpm exec vitest run tests/unit/
         env:
           CI: true
 
@@ -118,7 +118,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/infra?schema=public
       
       - name: Run integration tests
-        run: pnpm vitest run tests/integration/
+        run: pnpm exec vitest run tests/integration/
         env:
           CI: true
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/infra?schema=public
