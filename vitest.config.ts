@@ -13,7 +13,8 @@ export default defineConfig(({ mode }) => {
       },
     },
     test: {
-      environment: 'node',
+      // Use jsdom for unit tests (browser environment), node for integration
+      environment: 'jsdom',
       sequence: {
         concurrent: false,
       },
@@ -21,6 +22,8 @@ export default defineConfig(({ mode }) => {
         // Pass all env vars to test environment
         ...env,
       },
+      // Setup file for test matchers
+      setupFiles: ['./tests/setup.ts'],
     },
   };
 });
