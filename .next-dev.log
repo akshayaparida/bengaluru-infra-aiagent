@@ -33,3 +33,11 @@
 
  ✓ Starting...
  ✓ Ready in 1855ms
+ ⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+   ▲ Next.js 15.5.4 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://10.140.93.225:3001
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 1263ms
