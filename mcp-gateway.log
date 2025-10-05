@@ -1,6 +1,0 @@
-nohup: ignoring input
-✅ MCP Gateway (Cerebras Llama 3.3 70B) listening on http://localhost:8008
-   Health: http://localhost:8008/health
-   Classify: POST http://localhost:8008/tools/classify.report
-   Email Gen: POST http://localhost:8008/tools/generate.email
-   Tweet Gen: POST http://localhost:8008/tools/generate.tweet

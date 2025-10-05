@@ -28,11 +28,26 @@
 .data/
 logs/
 
-# debug
+# debug and test outputs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
+test-*.log
+
+# runtime and process files
+*.pid
+
+# backup files
+*.bak
+*.backup
+*-backup.*
+*-old.*
+
+# test configuration files
+test-*.js
+test-*.ts
 
 # env files (can opt-in for committing if needed)
 .env*
