@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:all": "bash start-all.sh",
-    "dev:ai": "PORT=8009 node mcp-gateway/server.js",
+    "dev:ai": "PORT=8008 node mcp-gateway/server.js",
     "build": "next build --turbopack",
     "start": "next start",
     "start:all": "bash start-all.sh",
