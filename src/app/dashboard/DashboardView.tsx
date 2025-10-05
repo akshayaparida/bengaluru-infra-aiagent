@@ -143,7 +143,12 @@ export default function DashboardView({ refreshToken }: { refreshToken?: string 
     <div className="p-4 md:p-6 lg:p-8 max-w-[1920px] mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 lg:gap-8">
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold text-neutral-100">Map</h2>
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            <h2 className="text-xl font-semibold text-neutral-100">Map</h2>
+          </div>
           <div 
             ref={mapElRef} 
             className="h-[50vh] md:h-[60vh] lg:h-[65vh] w-full border border-neutral-700 rounded-xl shadow-lg overflow-hidden"
@@ -154,7 +159,12 @@ export default function DashboardView({ refreshToken }: { refreshToken?: string 
 
           {/* Recent reports with status */}
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold text-neutral-100">Recent reports</h3>
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-neutral-100">Recent reports</h3>
+            </div>
             <ul className="space-y-3">
               {reports.map((r) => (
                 <li 
@@ -226,7 +236,12 @@ export default function DashboardView({ refreshToken }: { refreshToken?: string 
         </section>
         
         <aside className="space-y-4 lg:space-y-6">
-          <h2 className="text-xl font-semibold text-neutral-100">Transparency</h2>
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <h2 className="text-xl font-semibold text-neutral-100">Transparency</h2>
+          </div>
           <label className="block space-y-2">
             <span className="text-sm font-medium text-neutral-300">Department filter</span>
             <select 

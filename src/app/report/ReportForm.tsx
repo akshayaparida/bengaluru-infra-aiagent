@@ -384,30 +384,47 @@ export default function ReportForm({ onSubmitted }: { onSubmitted?: (id: string)
         <button
           type="button"
           onClick={onStartCamera}
-          className="h-12 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-left px-4"
+          className="h-12 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-left px-4 flex items-center gap-2"
         >
-          <div className="text-sm text-neutral-300">Take photo (camera)</div>
-          <div className="text-xs text-neutral-400">Open device camera</div>
+          <svg className="w-5 h-5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <div className="flex-1">
+            <div className="text-sm text-neutral-300">Take photo</div>
+            <div className="text-xs text-neutral-400">Camera</div>
+          </div>
         </button>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="h-12 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-left px-4"
+          className="h-12 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-left px-4 flex items-center gap-2"
         >
-          <div className="text-sm text-neutral-300">Upload from files</div>
-          <div className="text-xs text-neutral-400">Choose an image</div>
+          <svg className="w-5 h-5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <div className="flex-1">
+            <div className="text-sm text-neutral-300">Upload files</div>
+            <div className="text-xs text-neutral-400">Choose image</div>
+          </div>
         </button>
         <button 
           type="button" 
           onClick={onUseMyLocation} 
           disabled={locationLoading}
-          className="h-12 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-left px-4 disabled:opacity-50"
+          className="h-12 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-left px-4 disabled:opacity-50 flex items-center gap-2"
         >
-          <div className="text-sm text-neutral-300">
-            {locationLoading ? '🛰️ Getting GPS...' : '📍 Get GPS location'}
-          </div>
-          <div className="text-xs text-neutral-400">
-            {locationLoading ? 'Please wait...' : 'Detect current coordinates'}
+          <svg className="w-5 h-5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <div className="flex-1">
+            <div className="text-sm text-neutral-300">
+              {locationLoading ? 'Getting GPS...' : 'Get location'}
+            </div>
+            <div className="text-xs text-neutral-400">
+              {locationLoading ? 'Please wait...' : 'GPS coordinates'}
+            </div>
           </div>
         </button>
       </div>
