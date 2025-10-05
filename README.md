@@ -8,6 +8,7 @@
 [![React](https://img.shields.io/badge/React-19-blue)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)](https://www.typescriptlang.org/)
 [![Cerebras](https://img.shields.io/badge/Cerebras-LLaMA-green)](https://cerebras.ai/)
+[![Docker](https://img.shields.io/badge/Docker-MCP_Gateway-blue)](https://www.docker.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.5-blue)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
@@ -129,13 +130,25 @@ node scripts/seed-sample-reports.ts
 #### 4. Run Application
 
 ```bash
-# Start Next.js development server
-pnpm dev
+# Start all services (Next.js + MCP Gateway)
+pnpm dev:all
+# OR use the script directly: ./start-all.sh
 
-# Server will start at http://localhost:3000
+# This will start:
+# - MCP Gateway (AI service) on port 8008
+# - Next.js dev server on port 3000
+# - Show live logs from both services
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+#### 5. Stop Services
+
+```bash
+# Stop all services gracefully
+pnpm stop
+# OR use the script directly: ./stop-all.sh
+```
 
 ### Mobile Access (Optional)
 
@@ -174,20 +187,49 @@ For detailed setup and troubleshooting, see [Demo Guide](./DEMO-GUIDE.md) and [A
 
 ## Development
 
+### Available Scripts
+
 ```bash
-# Start dev server
+# Start all services (Next.js + MCP Gateway)
+pnpm dev:all
+
+# Start Next.js only (without AI features)
 pnpm dev
 
+# Start MCP Gateway only (AI service on port 8008)
+pnpm dev:ai
+
+# Stop all services
+pnpm stop
+
 # Run tests
-pnpm test
-pnpm e2e
+pnpm test          # Integration tests with Vitest
+pnpm test:ui       # Tests with UI dashboard
+pnpm e2e           # End-to-end tests with Playwright
 
-# Database
-pnpm prisma studio
-pnpm prisma migrate dev
+# Database management
+pnpm prisma studio        # Open Prisma Studio GUI
+pnpm prisma migrate dev   # Create and apply migrations
+pnpm prisma generate      # Generate Prisma Client
 
-# Build for production
-pnpm build
+# Production build
+pnpm build         # Build for production
+pnpm start         # Start production server
+
+# Code quality
+pnpm lint          # Run ESLint
+```
+
+### Service Logs
+
+When running `pnpm dev:all`, logs are saved to:
+- `logs/nextjs.log` - Next.js server logs
+- `logs/mcp-gateway.log` - MCP Gateway (AI) logs
+
+```bash
+# View live logs
+tail -f logs/nextjs.log
+tail -f logs/mcp-gateway.log
 ```
 
 ### Project Structure
@@ -211,24 +253,12 @@ src/
 
 ## Documentation
 
-- [Architecture Guide](./docs/SYSTEM-ARCHITECTURE-STUDY-GUIDE.md) – Complete technical documentation
-- [Production Deployment](./docs/PRODUCTION-DEPLOYMENT.md) – AWS Lambda, Vercel, EC2 guides  
-- [POC Document](./docs/POC.md) – Original proof of concept
-- [Cheat Sheet](./docs/CHEAT-SHEET.md) – Quick reference
-- [Flashcards](./docs/FLASHCARDS.md) – Interview prep
-
----
-
-## Deployment
-
-Supports multiple deployment options:
-
-- **AWS Lambda** ($1-5/month) – Serverless, auto-scaling  
-- **Vercel** (Free) – One-click deployment
-- **AWS EC2** ($10/month) – Traditional VPS
-
-See [Production Deployment Guide](./docs/PRODUCTION-DEPLOYMENT.md) for detailed instructions.
-
+- **[Demo Guide](./DEMO-GUIDE.md)** – Step-by-step demo recording guide
+- **[Architecture Guide](./docs/SYSTEM-ARCHITECTURE-STUDY-GUIDE.md)** – Complete technical documentation
+- **[AI Cost Control](./docs/AI-COST-CONTROL.md)** – Managing Cerebras API usage and costs
+- **[POC Document](./docs/POC.md)** – Original proof of concept
+- **[Cheat Sheet](./docs/CHEAT-SHEET.md)** – Quick reference for commands and concepts
+- **[Flashcards](./docs/FLASHCARDS.md)** – Interview preparation guide
 
 ---
 
