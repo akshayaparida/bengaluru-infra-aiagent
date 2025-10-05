@@ -3,6 +3,7 @@
 import React from "react";
 import dynamic from "next/dynamic";
 import ReportForm from "../report/ReportForm";
+import Logo from "@/components/Logo";
 
 const DashboardView = dynamic(() => import("../dashboard/DashboardView"), { ssr: false });
 
@@ -83,12 +84,33 @@ return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8 lg:gap-10">
           {/* Report Form Section */}
           <section className="space-y-4 md:space-y-6">
-            <header className="space-y-2">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-100 bg-gradient-to-r from-neutral-100 to-neutral-400 bg-clip-text text-transparent">
-                Bengaluru Infra AI Reporter
-              </h1>
-              <p className="text-sm md:text-base text-neutral-400 leading-relaxed max-w-2xl">
-                AI-powered civic reporting agent that automatically emails and tweets your infrastructure issues to respective authorities
+            <header className="space-y-4">
+              {/* Logo and Title */}
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-emerald-500/20 blur-xl rounded-full" />
+                  <Logo className="w-14 h-14 md:w-16 md:h-16 lg:w-20 lg:h-20 relative z-10 drop-shadow-2xl" />
+                </div>
+                <div className="flex-1">
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-400 via-emerald-400 to-purple-400 bg-clip-text text-transparent leading-tight">
+                    Bengaluru Infra AI
+                  </h1>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="px-2 py-0.5 text-xs font-semibold bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30">
+                      🤖 AI-Powered
+                    </span>
+                    <span className="px-2 py-0.5 text-xs font-semibold bg-blue-500/20 text-blue-300 rounded-full border border-blue-500/30">
+                      🚀 Real-time
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Description */}
+              <p className="text-sm md:text-base text-neutral-300 leading-relaxed max-w-2xl">
+                <span className="font-semibold text-emerald-400">Smart civic reporting:</span> Upload infrastructure issues with photos and GPS. 
+                Our AI automatically classifies, emails authorities, and posts tweets with 
+                <span className="font-semibold text-blue-400"> Cerebras LLaMA 3.3 70B</span>.
               </p>
             </header>
             

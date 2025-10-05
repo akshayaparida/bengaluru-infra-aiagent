@@ -13,9 +13,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bengaluru Infra Agent (Local PWA)",
-  description: "Local-only POC for civic infra reporting",
+  title: "Bengaluru Infra AI | Smart Civic Reporting",
+  description: "AI-powered civic infrastructure reporting with Cerebras LLaMA. Report potholes, streetlights, garbage issues with automated emails and tweets to authorities.",
   manifest: "/manifest.json",
+  keywords: ["Bengaluru", "infrastructure", "AI", "civic reporting", "Cerebras", "LLaMA"],
+  authors: [{ name: "Bengaluru Infra AI Team" }],
+  openGraph: {
+    title: "Bengaluru Infra AI",
+    description: "Smart civic reporting with AI",
+    type: "website",
+  },
 };
 
 export const viewport = {
