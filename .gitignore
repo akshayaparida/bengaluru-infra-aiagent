@@ -60,3 +60,4 @@ test-*.ts
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+output.mp4

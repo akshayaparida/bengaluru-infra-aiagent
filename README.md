@@ -12,7 +12,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.5-blue)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-[Demo Guide](./DEMO-GUIDE.md) • [Documentation](./docs/) • [Report Bug](https://github.com/akshayaparida/bengaluru-infra-aiagent/issues) • [Request Feature](https://github.com/akshayaparida/bengaluru-infra-aiagent/issues)
+[Documentation](./docs/) • [Report Bug](https://github.com/akshayaparida/bengaluru-infra-aiagent/issues) • [Request Feature](https://github.com/akshayaparida/bengaluru-infra-aiagent/issues)
 
 </div>
 
@@ -72,14 +72,19 @@ Powered by **Cerebras LLaMA** and **Docker MCP Gateway**
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         BACKEND SERVICES LAYER                          │
 │  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │  2. AI Classification (Cerebras LLaMA via MCP Gateway)            │ │
+│  │  2. AI Classification (Cerebras LLaMA 3.3-70B)                    │ │
+│  │                                                                    │ │
+│  │     Next.js → Custom MCP Gateway → Cerebras Cloud API             │ │
+│  │       :3000     (HTTP :8008)         (HTTPS)                      │ │
+│  │                                                                    │ │
+│  │     Output:                                                        │ │
 │  │     - Category: pothole/garbage/water_leak/streetlight            │ │
 │  │     - Severity: low/medium/high/critical                          │ │
 │  │     - AI-generated diagnosis & email content                      │ │
 │  └────────────────────────────────────────────────────────────────────┘ │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐│
 │  │   Prisma     │  │   Nodemailer │  │  Twitter API │  │ Rate Limiter││
-│  │     ORM      │  │     SMTP     │  │      v2      │  │   (Redis)   ││
+│  │     ORM      │  │     SMTP     │  │      v2      │  │  (In-Memory)││
 │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬──────┘│
 └─────────┼──────────────────┼─────────────────┼─────────────────┼───────┘
           │                  │                 │                 │
@@ -87,9 +92,10 @@ Powered by **Cerebras LLaMA** and **Docker MCP Gateway**
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                       DATA & EXTERNAL SERVICES                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐│
-│  │  PostgreSQL  │  │   MCP Docker │  │  Twitter API │  │  Cloudflare ││
-│  │   17.5 DB    │  │   Gateway    │  │   Endpoint   │  │     CDN     ││
-│  │   (Prisma)   │  │  :8008       │  │   (OAuth)    │  │  (Uploads)  ││
+│  │  PostgreSQL  │  │  Custom MCP  │  │  Cerebras AI │  │  Cloudflare ││
+│  │   17.5 DB    │  │   Gateway    │  │   Cloud API  │  │     CDN     ││
+│  │   (Docker)   │  │  (Docker)    │  │  (LLaMA 3.3) │  │  (Uploads)  ││
+│  │   :5432      │  │  :8008       │  │   (HTTPS)    │  │             ││
 │  └──────────────┘  └──────────────┘  └──────────────┘  └─────────────┘│
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -202,6 +208,110 @@ Powered by **Cerebras LLaMA** and **Docker MCP Gateway**
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
+### Custom MCP Gateway Architecture (Detailed)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│            CUSTOM MCP GATEWAY - AI MIDDLEWARE ARCHITECTURE            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────┐          ┌───────────────────────┐
+│   NEXT.JS :3000      │          │   CEREBRAS CLOUD     │
+│   (Frontend/API)     │          │   (AI Provider)      │
+└───────────┬───────────┘          └──────────┬────────────┘
+            │                                 ▲
+            │ HTTP POST                       │ HTTPS POST
+            │ /tools/classify.report          │ /v1/chat/completions
+            │ {description}                   │ {model, messages}
+            │                                 │
+            ▼                                 │
+┌───────────────────────────────────────────────────────────────────────┐
+│                                                                       │
+│    CUSTOM MCP GATEWAY (Docker Container "bia-mcp" on :8008)          │
+│    File: mcp-gateway/server.js (316 lines, Pure Node.js)             │
+│                                                                       │
+│    ┌─────────────────────────────────────────────────────────────┐    │
+│    │  ENDPOINT 1: POST /tools/classify.report                    │    │
+│    │  Purpose: AI-powered issue classification                   │    │
+│    │                                                                │    │
+│    │  Step 1: Receive Request                                    │    │
+│    │    Input: {description: "Large pothole on main road"}       │    │
+│    │                                                                │    │
+│    │  Step 2: Prompt Engineering                                 │    │
+│    │    const prompt = `                                           │    │
+│    │      You are an AI assistant for civic infrastructure.       │    │
+│    │      Classify this issue: "${description}"                    │    │
+│    │      Categories: pothole, streetlight, garbage, water-leak    │    │
+│    │      Severity: low, medium, high, critical                    │    │
+│    │      Respond ONLY with JSON: {category, severity, diagnosis}  │    │
+│    │    `;                                                           │    │
+│    │                                                                │    │
+│    │  Step 3: Call Cerebras API                                  │    │
+│    │    https.request({                                            │    │
+│    │      hostname: 'api.cerebras.ai',                             │    │
+│    │      path: '/v1/chat/completions',                            │    │
+│    │      method: 'POST',                                          │    │
+│    │      headers: {                                               │    │
+│    │        'Authorization': `Bearer ${CEREBRAS_API_KEY}`,         │    │
+│    │        'Content-Type': 'application/json'                     │    │
+│    │      },                                                       │    │
+│    │      body: {                                                  │    │
+│    │        model: 'llama3.3-70b',                                 │    │
+│    │        messages: [{ role: 'user', content: prompt }]          │    │
+│    │      }                                                        │    │
+│    │    })                                                         │    │
+│    │                                                                │    │
+│    │  Step 4: Parse AI Response                                  │    │
+│    │    - Extract JSON from response                              │    │
+│    │    - Validate category (pothole/streetlight/garbage/water)   │    │
+│    │    - Validate severity (low/medium/high/critical)            │    │
+│    │    - Fallback to keyword matching if AI fails                │    │
+│    │                                                                │    │
+│    │  Step 5: Return Standardized Response                       │    │
+│    │    {                                                          │    │
+│    │      category: "pothole",                                     │    │
+│    │      severity: "high",                                        │    │
+│    │      diagnosis: "Deep pothole 40cm diameter causing...",     │    │
+│    │      simulated: false                                         │    │
+│    │    }                                                          │    │
+│    └─────────────────────────────────────────────────────────────┘    │
+│                                                                       │
+│    ┌─────────────────────────────────────────────────────────────┐    │
+│    │  ENDPOINT 2: POST /tools/generate.email                     │    │
+│    │  Purpose: Generate formal emails to authorities             │    │
+│    │  Similar flow to classify.report with custom prompt         │    │
+│    └─────────────────────────────────────────────────────────────┘    │
+│                                                                       │
+│    ┌─────────────────────────────────────────────────────────────┐    │
+│    │  ENDPOINT 3: POST /tools/generate.tweet                     │    │
+│    │  Purpose: Generate citizen engagement tweets                │    │
+│    │  Similar flow to classify.report with custom prompt         │    │
+│    └─────────────────────────────────────────────────────────────┘    │
+│                                                                       │
+│    ┌─────────────────────────────────────────────────────────────┐    │
+│    │  KEY FEATURES                                               │    │
+│    │  - Zero dependencies (pure Node.js built-ins)              │    │
+│    │  - Simple HTTP/JSON protocol (no JSON-RPC)                 │    │
+│    │  - Docker containerized (FROM node:22-alpine)              │    │
+│    │  - Error handling with fallback to keyword matching        │    │
+│    │  - Fast response time (< 3 seconds AI inference)           │    │
+│    │  - Health check endpoint: GET /health                      │    │
+│    └─────────────────────────────────────────────────────────────┘    │
+│                                                                       │
+└───────────────────────────────────────────────────────────────────────┘
+
+**WHY CUSTOM MCP GATEWAY vs OFFICIAL MCP SDK?**
+
+1. **Simplicity**: 316 lines of code vs 1000s in official SDK
+2. **Learning**: Full control and understanding of every line
+3. **Performance**: Direct HTTP with zero abstraction overhead
+4. **Specificity**: Tailored exactly to Cerebras API requirements
+5. **Hackathon-Ready**: Easy to demo, explain, and troubleshoot
+
+**NOT USING**: Official MCP SDK (@modelcontextprotocol/sdk), JSON-RPC protocol
+**INSPIRED BY**: MCP architecture pattern (gateway provides model context)
+```
+
 ### Data Flow Architecture
 
 ```
@@ -229,37 +339,64 @@ Powered by **Cerebras LLaMA** and **Docker MCP Gateway**
            │ Trigger AI Classification
            │
            ▼
-┌──────────────────────────┐
-│  MCP Gateway (Docker)    │
-│  :8008                   │
-│                          │
-│  POST /classify          │
-│  {                       │
-│    prompt: "...",        │
-│    model: "llama-3"      │
-│  }                       │
-└──────────┬───────────────┘
+┌──────────────────────────────────────────┐
+│  Custom MCP Gateway (Docker :8008)       │
+│  Node.js HTTP Server (316 lines)         │
+│                                           │
+│  POST /tools/classify.report             │
+│  { description: "Large pothole..." }     │
+│                                           │
+│  ┌─────────────────────────────────────┐ │
+│  │ Prompt Engineering:                 │ │
+│  │ "Classify this infrastructure       │ │
+│  │  issue: [description]               │ │
+│  │  Categories: pothole, streetlight,  │ │
+│  │  garbage, water-leak                │ │
+│  │  Respond with JSON only"            │ │
+│  └─────────────────────────────────────┘ │
+└──────────┬───────────────────────────────┘
            │
-           │ HTTP Request
+           │ HTTPS Request
+           │ POST https://api.cerebras.ai/v1/chat/completions
+           │ { model: "llama3.3-70b", messages: [...] }
            │
            ▼
-┌──────────────────────────┐
-│  Cerebras API            │
-│  (Cloud)                 │
-│                          │
-│  LLaMA 3.3-70B          │
-│  - Fast inference        │
-│  - Low latency           │
-└──────────┬───────────────┘
+┌──────────────────────────────────────────┐
+│  Cerebras Cloud API                      │
+│  (External Service)                      │
+│                                           │
+│  LLaMA 3.3-70B Inference                 │
+│  - Ultra-fast inference (< 3 seconds)    │
+│  - Wafer-scale AI compute                │
+│  - RESTful API endpoint                  │
+└──────────┬───────────────────────────────┘
            │
-           │ AI Response
-           │ { category, severity, diagnosis, email }
+           │ AI Response (JSON)
+           │ { choices: [{ message: { content: "{...}" } }] }
+           │
+           ▼
+┌──────────────────────────────────────────┐
+│  Custom MCP Gateway (Response Parsing)   │
+│                                           │
+│  1. Extract JSON from AI response        │
+│  2. Validate category/severity           │
+│  3. Handle errors & fallbacks            │
+│  4. Return standardized format:          │
+│     {                                    │
+│       category: "pothole",               │
+│       severity: "high",                  │
+│       diagnosis: "Deep pothole...",      │
+│       simulated: false                   │
+│     }                                    │
+└──────────┬───────────────────────────────┘
+           │
+           │ HTTP Response (JSON)
            │
            ▼
 ┌──────────────────────────┐
 │  Next.js Backend         │
 │                          │
-│  1. Parse AI response    │
+│  1. Parse MCP response   │
 │  2. Update PostgreSQL:   │
 │     - category           │
 │     - severity           │
@@ -475,7 +612,7 @@ curl http://localhost:3000
 # Should return HTML
 ```
 
-For detailed setup and troubleshooting, see [Demo Guide](./DEMO-GUIDE.md) and [Architecture Guide](./docs/SYSTEM-ARCHITECTURE-STUDY-GUIDE.md).
+For detailed setup and troubleshooting, see [Architecture Guide](./docs/SYSTEM-ARCHITECTURE-STUDY-GUIDE.md).
 
 ---
 
@@ -547,7 +684,6 @@ src/
 
 ## Documentation
 
-- **[Demo Guide](./DEMO-GUIDE.md)** – Step-by-step demo recording guide
 - **[Architecture Guide](./docs/SYSTEM-ARCHITECTURE-STUDY-GUIDE.md)** – Complete technical documentation
 - **[AI Cost Control](./docs/AI-COST-CONTROL.md)** – Managing Cerebras API usage and costs
 - **[POC Document](./docs/POC.md)** – Original proof of concept
@@ -589,7 +725,7 @@ src/
 
 <div align="center">
 
-**[Demo Guide](./DEMO-GUIDE.md)** • **[Documentation](./docs/)** • **[Report Issues](https://github.com/akshayaparida/bengaluru-infra-aiagent/issues)**
+**[Documentation](./docs/)** • **[Report Issues](https://github.com/akshayaparida/bengaluru-infra-aiagent/issues)**
 
 Built with ❤️ for Bengaluru by [Akshaya Parida](https://github.com/akshayaparida)
 
