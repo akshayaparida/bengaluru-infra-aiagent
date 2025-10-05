@@ -79,7 +79,7 @@ export default function SingleLanding() {
   }, [reportId, onClassify, onNotify]);
 
 return (
-    <main className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
+    <main className="flex-1 bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-10">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8 lg:gap-10">
           {/* Report Form Section */}
@@ -90,7 +90,7 @@ return (
                 <Logo className="w-10 h-10 md:w-12 md:h-12" />
                 <div className="flex-1">
                   <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-neutral-100">
-                    Bengaluru Infra AI
+                    Bengaluru Infra AI Reporter
                   </h1>
                   <p className="text-xs md:text-sm text-neutral-400 mt-0.5">
                     AI-powered civic reporting

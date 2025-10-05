@@ -30,6 +30,7 @@ export const viewport = {
 };
 
 import ServiceWorkerClient from "../components/ServiceWorkerClient";
+import Footer from "../components/Footer";
 
 export default function RootLayout({
   children,
@@ -38,9 +39,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-<body className={`${geistSans.variable} ${geistMono.variable} bg-neutral-950 text-neutral-100 antialiased` }>
+<body className={`${geistSans.variable} ${geistMono.variable} bg-neutral-950 text-neutral-100 antialiased flex flex-col min-h-screen` }>
         <ServiceWorkerClient />
         {children}
+        <Footer />
       </body>
     </html>
   );

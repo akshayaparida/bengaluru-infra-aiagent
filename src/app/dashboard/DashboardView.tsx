@@ -165,7 +165,7 @@ export default function DashboardView({ refreshToken }: { refreshToken?: string 
               </svg>
               <h3 className="text-lg font-semibold text-neutral-100">Recent reports</h3>
             </div>
-            <ul className="space-y-3">
+            <ul className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-900">
               {reports.map((r) => (
                 <li 
                   key={r.id} 
